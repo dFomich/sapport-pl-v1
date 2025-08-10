@@ -1,0 +1,96 @@
+application {
+  config {
+    baseName wmmapp
+    applicationType monolith
+    packageName com.wmm.app
+    authenticationType jwt
+    prodDatabaseType postgresql
+    devDatabaseType postgresql
+    buildTool maven
+    clientFramework react
+    testFrameworks []
+    serviceDiscoveryType no
+    enableTranslation true
+    nativeLanguage en
+    languages [en, pl, ru]
+    jhipsterVersion "8.5.0"
+  }
+}
+
+entity InventoryUpload {
+  originalFilename String required
+  uploadedBy String required
+  uploadedAt Instant required
+  totalRows Integer required
+  addedCount Integer required
+  updatedCount Integer required
+  storageTypesFound Text // JSON строка вроде ["BUD","CLD"]
+}
+
+entity InventoryRow {
+  storageType String required minlength(1) maxlength(32)
+  material String required minlength(1) maxlength(64)
+  materialDescription String required maxlength(255)
+  availableStock Integer required min(0)
+}
+
+entity InventoryCurrent {
+  storageType String required minlength(1) maxlength(32)
+  material String required minlength(1) maxlength(64)
+  materialDescription String required maxlength(255)
+  availableStock Integer required min(0)
+  updatedAt Instant required
+}
+
+entity ProductCategory {
+  name String required unique
+  slug String required unique
+  active Boolean required
+}
+
+entity AvailablePartTile {
+  title String required maxlength(120)
+  comment Text
+  imagePath String // относительный путь/имя файла
+  storageType String required minlength(1) maxlength(32)
+  material String required minlength(1) maxlength(64) // связываем по паре (storageType, material)
+  active Boolean required
+  createdAt Instant required
+  updatedAt Instant required
+}
+
+entity WorkOrder {
+  orderNumber Long required // УНИКАЛЬНЫЙ авто‑номер заказа
+  vehicleLabel String required maxlength(120) // ввод механика: "PZ_4A512 WGM_4556H"
+  createdAt Instant required
+}
+
+entity WorkOrderItem {
+  storageType String required minlength(1) maxlength(32)
+  material String required minlength(1) maxlength(64)
+  materialDescriptionSnapshot String required maxlength(255)
+  qty Integer required min(1)
+  stockAfter Integer required min(0) // остаток ПОСЛЕ списания
+}
+
+relationship OneToMany {
+  InventoryUpload{rows} to InventoryRow{upload}
+  WorkOrder{items} to WorkOrderItem{order}
+}
+
+relationship ManyToMany {
+  AvailablePartTile{categories(name)} to ProductCategory{tiles(title)}
+}
+
+paginate InventoryRow with pagination
+paginate InventoryCurrent with pagination
+paginate ProductCategory with pagination
+paginate AvailablePartTile with pagination
+paginate WorkOrder with pagination
+paginate WorkOrderItem with pagination
+
+service * with serviceClass
+dto * with mapstruct
+filter * // включаем критерии (для серверных фильтров)
+
+microservice * with no

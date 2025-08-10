@@ -1,0 +1,20 @@
+{
+  "generator-jhipster": {
+    "applicationType": "monolith",
+    "authenticationType": "jwt",
+    "baseName": "wmmapp",
+    "buildTool": "maven",
+    "clientFramework": "react",
+    "devDatabaseType": "postgresql",
+    "enableTranslation": true,
+    "entities": [],
+    "jhipsterVersion": "8.11.0",
+    "jwtSecretKey": "YzFiMGM0OGU5OGYzZTZjZTRhNmRjOTY4YjJjYTllYTg2M2Q0YWVjMTRlYTQ2OGM4YWQ5ZWJhMzY0MjljOTAyNzUwMTMwYjhlNTY2ZTc3NjlkNzRhNmEyODAxYTY5MGVlMDA1MDE2N2I1ZmRmMzhiMWJkYjFkZjcyZjUzYThmYTc=",
+    "languages": ["en", "pl", "ru"],
+    "nativeLanguage": "en",
+    "packageName": "com.wmm.app",
+    "prodDatabaseType": "postgresql",
+    "serviceDiscoveryType": "no",
+    "testFrameworks": []
+  }
+}
