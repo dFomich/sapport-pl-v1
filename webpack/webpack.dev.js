@@ -50,6 +50,7 @@ module.exports = async options =>
         directory: './target/classes/static/',
       },
       port: 9060,
+      allowedHosts: 'all', // ✅ вот эта строка решает ошибку Invalid Host header
       proxy: [
         {
           context: ['/api', '/services', '/management', '/v3/api-docs', '/h2-console'],
@@ -60,6 +61,7 @@ module.exports = async options =>
       ],
       historyApiFallback: true,
     },
+
     stats: process.env.JHI_DISABLE_WEBPACK_LOGS ? 'none' : options.stats,
     plugins: [
       process.env.JHI_DISABLE_WEBPACK_LOGS
