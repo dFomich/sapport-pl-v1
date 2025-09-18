@@ -5,8 +5,7 @@ WORKDIR /app
 COPY mvnw ./
 COPY .mvn .mvn
 COPY pom.xml ./
-COPY sonar-project.properties ./  # 👈 добавляем!
-COPY src ./src
+COPY sonar-project.properties ./  
 
 
 RUN chmod +x mvnw && ./mvnw -Pprod -DskipTests clean verify
