@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: sapport-pl
+    env: java
+    plan: free
+    buildCommand: "./mvnw -Pprod -DskipTests clean verify"
+    startCommand: "java -jar target/*.jar"
+    envVars:
+      - key: JAVA_VERSION
+        value: 17
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: sapport-pl-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: sapport-pl-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: sapport-pl-db
+          property: password
+      - key: JHIPSTER_SLEEP
+        value: "10" # ждём, пока база поднимется, перед запуском jar
+
+databases:
+  - name: sapport-pl-db
+    plan: free
+    databaseName: wmmapp
+    user: wmmapp
