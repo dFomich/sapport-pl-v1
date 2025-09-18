@@ -4,26 +4,43 @@ services:
     env: java
     plan: free
     buildCommand: "./mvnw -Pprod -DskipTests clean verify"
-    startCommand: "java -jar target/*.jar"
+    # ВАЖНО: пробрасываем порт Render и собираем JDBC-URL из host/port/db
+    startCommand: >
+      bash -lc '
+      export SPRING_DATASOURCE_URL="jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}";
+      export SPRING_DATASOURCE_USERNAME="${DB_USER}";
+      export SPRING_DATASOURCE_PASSWORD="${DB_PASSWORD}";
+      java -Dserver.port=$PORT -jar target/*.jar
+      '
     envVars:
       - key: JAVA_VERSION
         value: 17
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-      - key: SPRING_DATASOURCE_URL
+      - key: JHIPSTER_SLEEP
+        value: "10"
+
+      # Эти четыре переменные наполняем из связанной базы Render:
+      - key: DB_HOST
         fromDatabase:
           name: sapport-pl-db
-          property: connectionString
-      - key: SPRING_DATASOURCE_USERNAME
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: sapport-pl-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: sapport-pl-db
+          property: database
+      - key: DB_USER
         fromDatabase:
           name: sapport-pl-db
           property: user
-      - key: SPRING_DATASOURCE_PASSWORD
+      - key: DB_PASSWORD
         fromDatabase:
           name: sapport-pl-db
           property: password
-      - key: JHIPSTER_SLEEP
-        value: "10" # ждём, пока база поднимется, перед запуском jar
 
 databases:
   - name: sapport-pl-db
