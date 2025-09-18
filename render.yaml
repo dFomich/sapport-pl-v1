@@ -1,22 +1,16 @@
 services:
   - type: web
     name: sapport-pl
-    env: node          # ⬅️ вместо env: java
+    env: docker        # ⬅️ теперь Docker
     plan: free
-    buildCommand: >
-      bash -lc 'export JAVA_HOME=/usr/lib/jvm/java-17 && export PATH=$JAVA_HOME/bin:$PATH &&
-      ./mvnw -Pprod -DskipTests clean verify'
-    startCommand: >
-      bash -lc 'export JAVA_HOME=/usr/lib/jvm/java-17 && export PATH=$JAVA_HOME/bin:$PATH &&
-      export SPRING_DATASOURCE_URL="jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}" &&
-      export SPRING_DATASOURCE_USERNAME="${DB_USER}" &&
-      export SPRING_DATASOURCE_PASSWORD="${DB_PASSWORD}" &&
-      java -Dserver.port=$PORT -jar target/*.jar'
+    # Dockerfile в корне — build/start команды не нужны
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: JHIPSTER_SLEEP
         value: "10"
+
+      # Подключение БД Render
       - key: DB_HOST
         fromDatabase: { name: sapport-pl-db, property: host }
       - key: DB_PORT
@@ -27,6 +21,14 @@ services:
         fromDatabase: { name: sapport-pl-db, property: user }
       - key: DB_PASSWORD
         fromDatabase: { name: sapport-pl-db, property: password }
+
+      # Собираем JDBC URL из компонентов
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+      - key: SPRING_DATASOURCE_USERNAME
+        value: ${DB_USER}
+      - key: SPRING_DATASOURCE_PASSWORD
+        value: ${DB_PASSWORD}
 
 databases:
   - name: sapport-pl-db
