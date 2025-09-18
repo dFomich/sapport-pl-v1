@@ -1,0 +1,38 @@
+{
+  "annotations": {
+    "changelogDate": "20250825141841"
+  },
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "code",
+      "fieldType": "String",
+      "fieldValidateRules": ["required", "minlength", "maxlength"],
+      "fieldValidateRulesMaxlength": "16",
+      "fieldValidateRulesMinlength": "2"
+    },
+    {
+      "fieldName": "name",
+      "fieldType": "String",
+      "fieldValidateRules": ["maxlength"],
+      "fieldValidateRulesMaxlength": "64"
+    },
+    {
+      "fieldName": "active",
+      "fieldType": "Boolean",
+      "fieldValidateRules": ["required"]
+    }
+  ],
+  "name": "Warehouse",
+  "relationships": [
+    {
+      "otherEntityField": "title",
+      "otherEntityName": "mechanicTile",
+      "otherEntityRelationshipName": "warehouses",
+      "relationshipName": "tiles",
+      "relationshipSide": "right",
+      "relationshipType": "many-to-many"
+    }
+  ],
+  "searchEngine": "no"
+}

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd">
+
+    <changeSet id="20250917-2" author="chatgpt">
+        <createTable tableName="gallery_item">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="image_url" type="varchar(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="caption" type="varchar(255)"/>
+            <column name="uploaded_at" type="timestamp"/>
+            <column name="uploaded_by" type="varchar(100)"/>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

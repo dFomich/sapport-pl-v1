@@ -1,0 +1,27 @@
+{
+  "wmmappApp": {
+    "warehouse": {
+      "home": {
+        "title": "Warehouses",
+        "refreshListLabel": "Обновить список",
+        "createLabel": "Создать новый Warehouse",
+        "createOrEditLabel": "Создать или отредактировать Warehouse",
+        "notFound": "Warehouses не найдено"
+      },
+      "created": "Новый Warehouse создан с идентификатором {{ param }}",
+      "updated": "Warehouse обновлен с идентификатором {{ param }}",
+      "deleted": "Warehouse удален с идентификатором {{ param }}",
+      "delete": {
+        "question": "Вы уверены что хотите удалить Warehouse {{ id }}?"
+      },
+      "detail": {
+        "title": "Warehouse"
+      },
+      "id": "ID",
+      "code": "Code",
+      "name": "Name",
+      "active": "Active",
+      "tiles": "Tiles"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+// ===== Entities =====
+entity Warehouse {
+  code String required minlength(2) maxlength(16),
+  name String maxlength(64),
+  active Boolean required
+}
+
+entity ProductCategory {
+  name String required maxlength(64),
+  active Boolean required
+}
+
+entity MechanicTile {
+  title String required maxlength(128),
+  comment String maxlength(1024),
+  materialCode String required maxlength(64),
+  imageUrl String maxlength(512),
+  active Boolean required
+}
+
+// ===== Relationships =====
+relationship ManyToMany {
+  MechanicTile{categories(name)} to ProductCategory{tiles(title)}
+}
+
+relationship ManyToMany {
+  MechanicTile{warehouses(code)} to Warehouse{tiles(title)}
+}

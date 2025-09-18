@@ -45,11 +45,28 @@ public class CacheConfiguration {
     @Bean
     public JCacheManagerCustomizer cacheManagerCustomizer() {
         return cm -> {
+            // базовые кэши пользователей
             createCache(cm, com.wmm.app.repository.UserRepository.USERS_BY_LOGIN_CACHE);
             createCache(cm, com.wmm.app.repository.UserRepository.USERS_BY_EMAIL_CACHE);
             createCache(cm, com.wmm.app.domain.User.class.getName());
             createCache(cm, com.wmm.app.domain.Authority.class.getName());
             createCache(cm, com.wmm.app.domain.User.class.getName() + ".authorities");
+
+            // инвентарные сущности
+            createCache(cm, com.wmm.app.domain.InventoryUpload.class.getName());
+            createCache(cm, com.wmm.app.domain.InventoryRow.class.getName());
+            createCache(cm, com.wmm.app.domain.InventoryCurrent.class.getName());
+
+            // новые сущности для механиков
+            createCache(cm, com.wmm.app.domain.Warehouse.class.getName());
+            createCache(cm, com.wmm.app.domain.Warehouse.class.getName() + ".tiles");
+
+            createCache(cm, com.wmm.app.domain.ProductCategory.class.getName());
+            createCache(cm, com.wmm.app.domain.ProductCategory.class.getName() + ".tiles");
+
+            createCache(cm, com.wmm.app.domain.MechanicTile.class.getName());
+            createCache(cm, com.wmm.app.domain.MechanicTile.class.getName() + ".categories");
+            createCache(cm, com.wmm.app.domain.MechanicTile.class.getName() + ".warehouses");
             // jhipster-needle-ehcache-add-entry
         };
     }

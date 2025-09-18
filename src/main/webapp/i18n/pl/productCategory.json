@@ -1,0 +1,26 @@
+{
+  "wmmappApp": {
+    "productCategory": {
+      "home": {
+        "title": "Product Category",
+        "refreshListLabel": "Refresh list",
+        "createLabel": "Dodaj Product Category",
+        "createOrEditLabel": "Dodaj lub edytuj: Product Category",
+        "notFound": "No Product Categories found"
+      },
+      "created": "Utworzono nowy obiekt typu Product Category z identyfikatorem {{ param }}",
+      "updated": "Uaktualniono obiekt typu Product Category z identyfikatorem {{ param }}",
+      "deleted": "Usunięto obiekt typu Product Category z identyfikatorem {{ param }}",
+      "delete": {
+        "question": "Czy na pewno chcesz usunąć Product Category {{ id }}?"
+      },
+      "detail": {
+        "title": "Product Category"
+      },
+      "id": "ID",
+      "name": "Name",
+      "active": "Active",
+      "tiles": "Tiles"
+    }
+  }
+}

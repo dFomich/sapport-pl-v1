@@ -1,0 +1,26 @@
+{
+  "wmmappApp": {
+    "productCategory": {
+      "home": {
+        "title": "Product Categories",
+        "refreshListLabel": "Обновить список",
+        "createLabel": "Создать новый Product Category",
+        "createOrEditLabel": "Создать или отредактировать Product Category",
+        "notFound": "Product Categories не найдено"
+      },
+      "created": "Новый Product Category создан с идентификатором {{ param }}",
+      "updated": "Product Category обновлен с идентификатором {{ param }}",
+      "deleted": "Product Category удален с идентификатором {{ param }}",
+      "delete": {
+        "question": "Вы уверены что хотите удалить Product Category {{ id }}?"
+      },
+      "detail": {
+        "title": "Product Category"
+      },
+      "id": "ID",
+      "name": "Name",
+      "active": "Active",
+      "tiles": "Tiles"
+    }
+  }
+}

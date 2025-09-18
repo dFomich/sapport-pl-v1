@@ -1,0 +1,30 @@
+{
+  "wmmappApp": {
+    "mechanicTile": {
+      "home": {
+        "title": "Mechanic Tiles",
+        "refreshListLabel": "Обновить список",
+        "createLabel": "Создать новый Mechanic Tile",
+        "createOrEditLabel": "Создать или отредактировать Mechanic Tile",
+        "notFound": "Mechanic Tiles не найдено"
+      },
+      "created": "Новый Mechanic Tile создан с идентификатором {{ param }}",
+      "updated": "Mechanic Tile обновлен с идентификатором {{ param }}",
+      "deleted": "Mechanic Tile удален с идентификатором {{ param }}",
+      "delete": {
+        "question": "Вы уверены что хотите удалить Mechanic Tile {{ id }}?"
+      },
+      "detail": {
+        "title": "Mechanic Tile"
+      },
+      "id": "ID",
+      "title": "Title",
+      "comment": "Comment",
+      "materialCode": "Material Code",
+      "imageUrl": "Image Url",
+      "active": "Active",
+      "categories": "Categories",
+      "warehouses": "Warehouses"
+    }
+  }
+}

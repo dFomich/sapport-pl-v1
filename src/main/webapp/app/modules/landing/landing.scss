@@ -1,0 +1,116 @@
+#hero {
+  width: 100%;
+  height: 100vh;
+  background: linear-gradient(180deg, #1e3c72, #2a5298);
+  color: #fff;
+  text-align: center;
+  position: relative;
+}
+
+#hero h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+#hero h2 {
+  font-size: 1.5rem;
+  margin-bottom: 30px;
+}
+
+.btn-get-started {
+  display: inline-block;
+  padding: 10px 28px;
+  border-radius: 50px;
+  transition: 0.5s;
+  color: #fff;
+  background: #2a5298;
+  font-weight: 600;
+}
+
+.btn-get-started:hover {
+  background: #1e3c72;
+  text-decoration: none;
+  color: #fff;
+}
+
+.hero-waves {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 60px;
+}
+
+.wave1 use {
+  animation: move-forever1 10s linear infinite;
+}
+.wave2 use {
+  animation: move-forever2 8s linear infinite;
+}
+.wave3 use {
+  animation: move-forever3 6s linear infinite;
+}
+
+@keyframes move-forever1 {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-90px);
+  }
+}
+@keyframes move-forever2 {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-60px);
+  }
+}
+@keyframes move-forever3 {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-30px);
+  }
+}
+
+.features {
+  padding: 60px 0;
+  background: #f9f9f9;
+
+  .icon-box {
+    background: #fff;
+    padding: 20px;
+    margin: 15px 0;
+    text-align: center;
+    border-radius: 8px;
+    transition: 0.3s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+
+    i {
+      font-size: 32px;
+      color: #2a5298;
+      margin-bottom: 10px;
+    }
+
+    h3 a {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1e3c72;
+      text-decoration: none;
+    }
+
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+#footer {
+  background: #1e3c72;
+  color: #fff;
+  text-align: center;
+}

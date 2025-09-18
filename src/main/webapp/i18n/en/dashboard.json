@@ -1,0 +1,22 @@
+{
+  "dashboard": {
+    "open": "Open",
+    "empty": "No shortcuts yet",
+    "mechanic": {
+      "catalog": "Mechanic catalog",
+      "myOrders": "My orders"
+    },
+    "wh": {
+      "orders": "Warehouse orders",
+      "stock": "Stock",
+      "catalog": "Mechanic showcase",
+      "tiles": "Manage tiles"
+    },
+    "admin": {
+      "users": "User management",
+      "entities": "Entities (CRUD)",
+      "warehouse": "Warehouses",
+      "productCategory": "Product categories"
+    }
+  }
+}

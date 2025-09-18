@@ -2,8 +2,12 @@ import 'react-toastify/dist/ReactToastify.css';
 import './app.scss';
 import 'app/config/dayjs';
 
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import theme from 'app/theme';
+
 import React, { useEffect } from 'react';
-import { Card } from 'reactstrap';
+import { Card } from '@mui/material';
 import { BrowserRouter } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 
@@ -36,29 +40,35 @@ export const App = () => {
 
   const paddingTop = '60px';
   return (
-    <BrowserRouter basename={baseHref}>
-      <div className="app-container" style={{ paddingTop }}>
-        <ToastContainer position="top-left" className="toastify-container" toastClassName="toastify-toast" />
-        <ErrorBoundary>
-          <Header
-            isAuthenticated={isAuthenticated}
-            isAdmin={isAdmin}
-            currentLocale={currentLocale}
-            ribbonEnv={ribbonEnv}
-            isInProduction={isInProduction}
-            isOpenAPIEnabled={isOpenAPIEnabled}
-          />
-        </ErrorBoundary>
-        <div className="container-fluid view-container" id="app-view-container">
-          <Card className="jh-card">
-            <ErrorBoundary>
-              <AppRoutes />
-            </ErrorBoundary>
-          </Card>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <BrowserRouter basename={baseHref}>
+        <div className="app-container" style={{ paddingTop, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          <ToastContainer position="top-left" className="toastify-container" toastClassName="toastify-toast" />
+          <ErrorBoundary>
+            <Header
+              isAuthenticated={isAuthenticated}
+              isAdmin={isAdmin}
+              currentLocale={currentLocale}
+              ribbonEnv={ribbonEnv}
+              isInProduction={isInProduction}
+              isOpenAPIEnabled={isOpenAPIEnabled}
+            />
+          </ErrorBoundary>
+
+          <div className="container-fluid view-container" id="app-view-container" style={{ flex: 1 }}>
+            <Card sx={{ p: 2, borderRadius: 3, boxShadow: '0 8px 24px rgba(0,0,0,.06)' }}>
+              <ErrorBoundary>
+                <AppRoutes />
+              </ErrorBoundary>
+            </Card>
+          </div>
+
+          {/* Футер теперь вне контейнера и всегда снизу */}
           <Footer />
         </div>
-      </div>
-    </BrowserRouter>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 };
 

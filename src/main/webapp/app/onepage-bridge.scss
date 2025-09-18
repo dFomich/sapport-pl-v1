@@ -1,0 +1,81 @@
+/* ---------- Global background (мягкий фон как в лендингах OnePage) ---------- */
+body {
+  background:
+    radial-gradient(1200px 400px at 80% -100px, rgba(14, 162, 189, 0.12), transparent 60%),
+    radial-gradient(800px 300px at -100px 120%, rgba(14, 162, 189, 0.06), transparent 60%),
+    linear-gradient(180deg, #f6fbff 0%, #ffffff 65%, #ffffff 100%);
+  color: $body-color;
+}
+
+/* ---------- Cards / контейнеры ---------- */
+.jh-card {
+  border: none;
+  border-radius: 1rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  padding: 1.25rem;
+}
+
+/* ---------- Navbar / Header ---------- */
+.navbar {
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.navbar .nav-link {
+  font-weight: 600;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  border-radius: 0.75rem;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+}
+.btn-primary {
+  box-shadow: 0 6px 14px rgba(14, 162, 189, 0.25);
+}
+.btn-outline-primary {
+  border-width: 2px;
+}
+
+/* ---------- Forms ---------- */
+.form-control {
+  border-radius: 0.6rem;
+  padding: 0.55rem 0.75rem;
+}
+.form-select {
+  border-radius: 0.6rem;
+}
+.input-group-text {
+  border-radius: 0.6rem;
+}
+
+/* ---------- Modals ---------- */
+.modal-content {
+  border: none;
+  border-radius: 1rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+/* ---------- Tables ---------- */
+.table {
+  --bs-table-bg: transparent;
+  border-color: rgba(0, 0, 0, 0.06);
+}
+.table thead th {
+  font-weight: 600;
+  color: #1f2d3d;
+  border-bottom-width: 2px;
+}
+
+/* ---------- Links ---------- */
+a {
+  color: $primary;
+  font-weight: 600;
+}
+a:hover {
+  opacity: 0.9;
+}

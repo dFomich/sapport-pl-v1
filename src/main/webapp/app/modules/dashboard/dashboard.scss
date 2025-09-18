@@ -1,0 +1,21 @@
+.dashboard-tile-link {
+  text-decoration: none;
+  color: inherit;
+
+  .dashboard-tile {
+    width: 220px;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+    cursor: pointer;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    h5 {
+      font-weight: 600;
+    }
+  }
+}

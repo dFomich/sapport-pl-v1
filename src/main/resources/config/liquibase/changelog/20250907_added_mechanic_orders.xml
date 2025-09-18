@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="20250907-1" author="yourname">
+        <createTable tableName="mechanic_order">
+            <column name="order_id" type="varchar(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="mechanic_login" type="varchar(255)"/>
+            <column name="storage_type" type="varchar(255)"/>
+            <column name="created_at" type="timestamp"/>
+            <column name="completed" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+
+        <createTable tableName="mechanic_order_line">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="material_code" type="varchar(255)"/>
+            <column name="title" type="varchar(255)"/>
+            <column name="qty" type="integer"/>
+            <column name="image_url" type="varchar(1024)"/>
+            <column name="order_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="mechanic_order_line"
+            baseColumnNames="order_id"
+            referencedTableName="mechanic_order"
+            referencedColumnNames="order_id"
+            constraintName="fk_order_line_to_order"/>
+    </changeSet>
+
+</databaseChangeLog>

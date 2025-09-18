@@ -1,17 +1,19 @@
 import React from 'react';
-import { Route } from 'react-router'; // eslint-disable-line
-
+import { Route } from 'react-router-dom';
 import ErrorBoundaryRoutes from 'app/shared/error/error-boundary-routes';
 
-/* jhipster-needle-add-route-import - JHipster will add routes here */
+// entity route groups
+import WarehouseRoutes from './warehouse';
+import ProductCategoryRoutes from './product-category';
+import MechanicTileRoutes from './mechanic-tile';
 
-export default () => {
-  return (
-    <div>
-      <ErrorBoundaryRoutes>
-        {/* prettier-ignore */}
-        {/* jhipster-needle-add-route-path - JHipster will add routes here */}
-      </ErrorBoundaryRoutes>
-    </div>
-  );
-};
+const EntitiesRoutes = () => (
+  <ErrorBoundaryRoutes>
+    <Route path="warehouse/*" element={<WarehouseRoutes />} />
+    <Route path="product-category/*" element={<ProductCategoryRoutes />} />
+    <Route path="mechanic-tile/*" element={<MechanicTileRoutes />} />
+    {/* jhipster-needle-add-route - JHipster will add routes here */}
+  </ErrorBoundaryRoutes>
+);
+
+export default EntitiesRoutes;

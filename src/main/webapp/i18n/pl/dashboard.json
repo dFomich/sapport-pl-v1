@@ -1,0 +1,22 @@
+{
+  "dashboard": {
+    "open": "Otwórz",
+    "empty": "Brak skrótów",
+    "mechanic": {
+      "catalog": "Katalog mechanika",
+      "myOrders": "Moje zgłoszenia"
+    },
+    "wh": {
+      "orders": "Zlecenia magazynu",
+      "stock": "Stany",
+      "catalog": "Witryna dla mechaników",
+      "tiles": "Kafle mechanika"
+    },
+    "admin": {
+      "users": "Użytkownicy",
+      "entities": "Wszystkie encje",
+      "warehouse": "Magazyny",
+      "productCategory": "Kategorie produktów"
+    }
+  }
+}

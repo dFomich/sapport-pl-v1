@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.8.xsd">
+
+  <changeSet id="20250815-03-01-inventory-upload" author="wmm">
+    <createTable tableName="inventory_upload">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="original_filename" type="varchar(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="uploaded_by" type="varchar(100)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="uploaded_at" type="timestamp">
+        <constraints nullable="false"/>
+      </column>
+      <column name="total_rows" type="integer">
+        <constraints nullable="false"/>
+      </column>
+      <column name="added_count" type="integer">
+        <constraints nullable="false"/>
+      </column>
+      <column name="updated_count" type="integer">
+        <constraints nullable="false"/>
+      </column>
+      <column name="storage_types_found" type="text"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="20250815-03-02-inventory-row" author="wmm">
+    <createTable tableName="inventory_row">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="storage_type" type="varchar(32)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="material" type="varchar(64)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="material_description" type="varchar(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="available_stock" type="integer">
+        <constraints nullable="false"/>
+      </column>
+      <column name="upload_id" type="bigint"/>
+    </createTable>
+
+    <addForeignKeyConstraint
+      baseTableName="inventory_row" baseColumnNames="upload_id"
+      referencedTableName="inventory_upload" referencedColumnNames="id"
+      constraintName="fk_inventoryrow_upload"/>
+    <createIndex tableName="inventory_row" indexName="ix_inventoryrow_upload">
+      <column name="upload_id"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="20250815-03-03-inventory-current" author="wmm">
+    <createTable tableName="inventory_current">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="storage_type" type="varchar(32)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="material" type="varchar(64)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="material_description" type="varchar(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="available_stock" type="integer">
+        <constraints nullable="false"/>
+      </column>
+      <column name="updated_at" type="timestamp">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+
+    <createIndex tableName="inventory_current" indexName="ux_inventorycurrent_st_mat" unique="true">
+      <column name="storage_type"/>
+      <column name="material"/>
+    </createIndex>
+  </changeSet>
+
+</databaseChangeLog>

@@ -33,91 +33,138 @@ Development Ribbon
     pointer-events: none;
   }
 }
-
-/* ==========================================================================
-Navbar styles
+/* ========================================================================== 
+Navbar styles (обновлено под графитовый стиль)
 ========================================================================== */
 .jh-navbar {
-  background-color: #353d47;
-  padding: 0.2em 1em;
+  background: linear-gradient(90deg, #2c3138 0%, #3a3f47 100%);
+  padding: 0.5em 1.5em;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+
   .profile-image {
     margin: -10px 0;
     height: 40px;
     width: 40px;
     border-radius: 50%;
   }
+
   .dropdown-item.active,
   .dropdown-item.active:focus,
   .dropdown-item.active:hover {
-    background-color: #353d47;
+    background-color: #3a3f47;
   }
+
   .dropdown-toggle::after {
-    margin-left: 0.15em;
+    margin-left: 0.25em;
   }
+
   ul.navbar-nav {
     padding: 0.5em;
     .nav-item {
       margin-left: 1.5rem;
     }
   }
+
   a.nav-link {
-    font-weight: 400;
+    font-weight: 500;
+    color: #e0e0e0;
+    transition: color 0.2s ease;
+
     > span {
-      margin-left: 5px;
+      margin-left: 6px;
+    }
+
+    &:hover {
+      color: #ffffff;
     }
   }
+
   .jh-navbar-toggler {
     color: #ccc;
     font-size: 1.5em;
     padding: 10px;
+
     &:hover {
       color: #fff;
     }
   }
 }
+
 .navbar-brand {
   overflow: hidden;
-}
 
-.jh-navbar .navbar-nav .nav-link {
-  padding-right: 0;
-  padding-left: 0;
-}
-
-.navbar-version {
-  font-size: 0.65em;
-  color: $header-color-secondary;
-  padding: 0 0 0 10px;
-}
-
-.brand-logo {
-  &:hover {
-    text-decoration: none;
-  }
   .brand-icon {
-    height: 35px;
+    height: 60px; // 🔥 логотип выше
     width: auto;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+
     img {
-      width: 45px;
+      height: 60px; // 🔥 увеличенный размер картинки
+      width: auto;
+    }
+  }
+
+  .brand-title {
+    font-size: 1.5rem;
+    margin-left: 0.5rem;
+    font-weight: 600;
+    color: #f5f5f5;
+
+    &:hover {
+      color: #ffffff;
+      text-decoration: none;
     }
   }
 }
 
-.brand-title {
-  font-size: 1.25rem;
-  margin-left: 0.25rem;
-  color: $header-color;
-  &:hover {
-    color: $header-color-hover;
-    text-decoration: none;
-  }
+.navbar-version {
+  font-size: 0.7em;
+  color: #9da2a8;
+  padding: 0 0 0 10px;
 }
 
 .loading-bar {
   height: 3px;
-  background-color: #009cd8;
+  background-color: #4a90e2; // голубая полоса загрузки
   position: absolute;
   top: 0;
   z-index: 1031;
+}
+/* ========================================================================== 
+Dropdown menus (кастомизация под графитовый стиль)
+========================================================================== */
+.jh-navbar .dropdown-menu {
+  background-color: #2f3542 !important;
+  border: none;
+  border-radius: 12px;
+  padding: 0.5rem 0;
+  min-width: 180px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  animation: dropdownFade 0.25s ease;
+}
+
+.jh-navbar .dropdown-item {
+  color: #e0e0e0 !important;
+  font-weight: 500;
+  padding: 10px 16px;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff !important;
+  }
+}
+
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

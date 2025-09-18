@@ -23,14 +23,16 @@ public class AdminUserDTO implements Serializable {
     @Size(min = 1, max = 50)
     private String login;
 
+    @Size(min = 4, max = 60)
+    private String password;
+
     @Size(max = 50)
     private String firstName;
 
     @Size(max = 50)
     private String lastName;
 
-    @Email
-    @Size(min = 5, max = 254)
+    @Size(max = 254)
     private String email;
 
     @Size(max = 256)
@@ -85,6 +87,14 @@ public class AdminUserDTO implements Serializable {
 
     public void setLogin(String login) {
         this.login = login;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getFirstName() {
@@ -176,21 +186,12 @@ public class AdminUserDTO implements Serializable {
     }
 
     // prettier-ignore
-    @Override
-    public String toString() {
-        return "AdminUserDTO{" +
-            "login='" + login + '\'' +
-            ", firstName='" + firstName + '\'' +
-            ", lastName='" + lastName + '\'' +
-            ", email='" + email + '\'' +
-            ", imageUrl='" + imageUrl + '\'' +
-            ", activated=" + activated +
-            ", langKey='" + langKey + '\'' +
-            ", createdBy=" + createdBy +
-            ", createdDate=" + createdDate +
-            ", lastModifiedBy='" + lastModifiedBy + '\'' +
-            ", lastModifiedDate=" + lastModifiedDate +
-            ", authorities=" + authorities +
-            "}";
-    }
+	@Override
+	public String toString() {
+		return "AdminUserDTO{" + "login='" + login + '\'' + ", firstName='" + firstName + '\'' + ", lastName='"
+				+ lastName + '\'' + ", email='" + email + '\'' + ", imageUrl='" + imageUrl + '\'' + ", activated="
+				+ activated + ", langKey='" + langKey + '\'' + ", createdBy=" + createdBy + ", createdDate="
+				+ createdDate + ", lastModifiedBy='" + lastModifiedBy + '\'' + ", lastModifiedDate=" + lastModifiedDate
+				+ ", authorities=" + authorities + "}";
+	}
 }

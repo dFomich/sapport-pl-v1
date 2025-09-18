@@ -73,6 +73,15 @@ module.exports = async options => {
             include: [utils.root('./src/main/webapp/app')],
             exclude: [utils.root('node_modules')],
           },
+          {
+            test: /\.ttf$/,
+            type: 'asset/resource',
+          },
+          {
+            test: /\.ttf$/,
+            use: 'file-loader',
+          },
+
           /*
        ,
        Disabled due to https://github.com/jhipster/generator-jhipster/issues/16116

@@ -5,6 +5,7 @@ import prettier from 'eslint-plugin-prettier/recommended';
 import tseslint from 'typescript-eslint';
 import eslint from '@eslint/js';
 import react from 'eslint-plugin-react/configs/recommended.js';
+import reactHooks from 'eslint-plugin-react-hooks'; // ← ДОБАВИЛИ
 // jhipster-needle-eslint-add-import - JHipster will add additional import here
 
 export default tseslint.config(
@@ -17,6 +18,10 @@ export default tseslint.config(
   },
   { ignores: ['src/main/docker/'] },
   { ignores: ['target/classes/static/', 'target/'] },
+  {
+    // 🔽 новый блок: игнорируем OnePage vendor и js
+    ignores: ['src/main/webapp/content/onepage/assets/js/**', 'src/main/webapp/content/onepage/assets/vendor/**'],
+  },
   eslint.configs.recommended,
   {
     files: ['**/*.{js,cjs,mjs}'],
@@ -28,24 +33,26 @@ export default tseslint.config(
     files: ['src/main/webapp/**/*.{ts,tsx}'],
     extends: [...tseslint.configs.recommendedTypeChecked, react],
     settings: {
-      react: {
-        version: 'detect',
-      },
+      react: { version: 'detect' },
     },
     languageOptions: {
-      globals: {
-        ...globals.browser,
-      },
+      globals: { ...globals.browser },
       parserOptions: {
         project: ['./tsconfig.json', './tsconfig.test.json'],
       },
     },
+    plugins: {
+      'react-hooks': reactHooks, // ← ДОБАВИЛИ
+    },
     rules: {
+      // React Hooks
+      'react-hooks/rules-of-hooks': 'error', // ← ДОБАВИЛИ
+
+      'react-hooks/exhaustive-deps': 'off',
+
       '@typescript-eslint/member-ordering': [
         'error',
-        {
-          default: ['static-field', 'instance-field', 'constructor', 'static-method', 'instance-method'],
-        },
+        { default: ['static-field', 'instance-field', 'constructor', 'static-method', 'instance-method'] },
       ],
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/explicit-member-accessibility': 'off',
@@ -89,9 +96,7 @@ export default tseslint.config(
   },
   {
     files: ['src/main/webapp/**/*.spec.ts'],
-    rules: {
-      '@typescript-eslint/no-empty-function': 'off',
-    },
+    rules: { '@typescript-eslint/no-empty-function': 'off' },
   },
   // jhipster-needle-eslint-add-config - JHipster will add additional config here
   prettier,

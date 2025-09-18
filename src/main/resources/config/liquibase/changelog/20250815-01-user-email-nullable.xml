@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.8.xsd">
+
+  <changeSet id="20250815-01-user-email-nullable" author="wmm">
+    <dropNotNullConstraint tableName="jhi_user" columnName="email" columnDataType="varchar(254)"/>
+  </changeSet>
+</databaseChangeLog>

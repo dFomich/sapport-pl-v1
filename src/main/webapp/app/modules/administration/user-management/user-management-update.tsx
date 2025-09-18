@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Button, Col, FormText, Row } from 'reactstrap';
-import { Translate, ValidatedField, ValidatedForm, isEmail, translate } from 'react-jhipster';
+import { Button, Col, Row } from 'reactstrap';
+import { Translate, ValidatedField, ValidatedForm, translate } from 'react-jhipster';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import { languages, locales } from 'app/config/translation';
@@ -33,10 +33,29 @@ export const UserManagementUpdate = () => {
   };
 
   const saveUser = values => {
+    // Проверка пароля
+    if (isNew && (!values.password || values.password.length < 4)) {
+      alert('Password is required (min 4 characters).');
+      return;
+    }
+    if (values.password && values.confirmPassword && values.password !== values.confirmPassword) {
+      alert('Passwords do not match.');
+      return;
+    }
+
+    const payload = {
+      ...values,
+      ...(values.password ? { password: values.password } : {}),
+      // при создании — обязательно активируем
+      ...(isNew ? { activated: true } : {}),
+      // на всякий случай, если ролей не выбрали — даём базовую
+      ...(values.authorities?.length ? {} : { authorities: ['ROLE_USER'] }),
+    };
+
     if (isNew) {
-      dispatch(createUser(values));
+      dispatch(createUser(payload));
     } else {
-      dispatch(updateUser(values));
+      dispatch(updateUser(payload));
     }
     handleClose();
   };
@@ -46,6 +65,17 @@ export const UserManagementUpdate = () => {
   const loading = useAppSelector(state => state.userManagement.loading);
   const updating = useAppSelector(state => state.userManagement.updating);
   const authorities = useAppSelector(state => state.userManagement.authorities);
+
+  const passwordValidate = isNew
+    ? {
+        required: { value: true, message: 'Password is required.' },
+        minLength: { value: 4, message: 'Minimum length is 4.' },
+        maxLength: { value: 60, message: 'Maximum length is 60.' },
+      }
+    : {
+        minLength: { value: 4, message: 'Minimum length is 4.' },
+        maxLength: { value: 60, message: 'Maximum length is 60.' },
+      };
 
   return (
     <div>
@@ -61,7 +91,7 @@ export const UserManagementUpdate = () => {
           {loading ? (
             <p>Loading...</p>
           ) : (
-            <ValidatedForm onSubmit={saveUser} defaultValues={user}>
+            <ValidatedForm onSubmit={saveUser} defaultValues={isNew ? { langKey: 'en', activated: true } : user}>
               {user.id ? (
                 <ValidatedField
                   type="text"
@@ -77,67 +107,29 @@ export const UserManagementUpdate = () => {
                 name="login"
                 label={translate('userManagement.login')}
                 validate={{
-                  required: {
-                    value: true,
-                    message: translate('register.messages.validate.login.required'),
-                  },
+                  required: { value: true, message: translate('register.messages.validate.login.required') },
                   pattern: {
                     value: /^[a-zA-Z0-9!$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*$|^[_.@A-Za-z0-9-]+$/,
                     message: translate('register.messages.validate.login.pattern'),
                   },
-                  minLength: {
-                    value: 1,
-                    message: translate('register.messages.validate.login.minlength'),
-                  },
-                  maxLength: {
-                    value: 50,
-                    message: translate('register.messages.validate.login.maxlength'),
-                  },
+                  minLength: { value: 1, message: translate('register.messages.validate.login.minlength') },
+                  maxLength: { value: 50, message: translate('register.messages.validate.login.maxlength') },
                 }}
               />
+              {/* Пароль (обязателен только при создании) */}
+              <ValidatedField name="password" type="password" label="Password" validate={passwordValidate} />
+              <ValidatedField name="confirmPassword" type="password" label="Confirm password" />
               <ValidatedField
                 type="text"
                 name="firstName"
                 label={translate('userManagement.firstName')}
-                validate={{
-                  maxLength: {
-                    value: 50,
-                    message: translate('entity.validation.maxlength', { max: 50 }),
-                  },
-                }}
+                validate={{ maxLength: { value: 50, message: translate('entity.validation.maxlength', { max: 50 }) } }}
               />
               <ValidatedField
                 type="text"
                 name="lastName"
                 label={translate('userManagement.lastName')}
-                validate={{
-                  maxLength: {
-                    value: 50,
-                    message: translate('entity.validation.maxlength', { max: 50 }),
-                  },
-                }}
-              />
-              <FormText>This field cannot be longer than 50 characters.</FormText>
-              <ValidatedField
-                name="email"
-                label={translate('global.form.email.label')}
-                placeholder={translate('global.form.email.placeholder')}
-                type="email"
-                validate={{
-                  required: {
-                    value: true,
-                    message: translate('global.messages.validate.email.required'),
-                  },
-                  minLength: {
-                    value: 5,
-                    message: translate('global.messages.validate.email.minlength'),
-                  },
-                  maxLength: {
-                    value: 254,
-                    message: translate('global.messages.validate.email.maxlength'),
-                  },
-                  validate: v => isEmail(v) || translate('global.messages.validate.email.invalid'),
-                }}
+                validate={{ maxLength: { value: 50, message: translate('entity.validation.maxlength', { max: 50 }) } }}
               />
               <ValidatedField
                 type="checkbox"

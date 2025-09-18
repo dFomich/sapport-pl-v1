@@ -1,8 +1,8 @@
 import React from 'react';
 import { Translate, ValidatedField, translate } from 'react-jhipster';
 import { Alert, Button, Col, Form, Modal, ModalBody, ModalFooter, ModalHeader, Row } from 'reactstrap';
-import { Link } from 'react-router-dom';
-import { type FieldError, useForm } from 'react-hook-form';
+import { FieldError, useForm } from 'react-hook-form';
+import './login-modal.scss';
 
 export interface ILoginModalProps {
   showModal: boolean;
@@ -29,18 +29,25 @@ const LoginModal = (props: ILoginModalProps) => {
   };
 
   return (
-    <Modal isOpen={props.showModal} toggle={handleClose} backdrop="static" id="login-page" autoFocus={false}>
+    <Modal
+      isOpen={props.showModal}
+      toggle={handleClose}
+      backdrop="static"
+      id="login-page"
+      autoFocus={false}
+      contentClassName="login-modal-dark"
+    >
       <Form onSubmit={handleLoginSubmit}>
-        <ModalHeader id="login-title" data-cy="loginTitle" toggle={handleClose}>
-          <Translate contentKey="login.title">Sign in</Translate>
+        <ModalHeader id="login-title" data-cy="loginTitle" toggle={handleClose} className="login-modal-header">
+          <Translate contentKey="login.title">Вход</Translate>
         </ModalHeader>
-        <ModalBody>
+        <ModalBody className="login-modal-body">
           <Row>
             <Col md="12">
               {loginError ? (
-                <Alert color="danger" data-cy="loginError">
+                <Alert color="danger" data-cy="loginError" className="login-alert">
                   <Translate contentKey="login.messages.error.authentication">
-                    <strong>Failed to sign in!</strong> Please check your credentials and try again.
+                    <strong>Ошибка входа!</strong> Проверьте логин и пароль.
                   </Translate>
                 </Alert>
               ) : null}
@@ -80,27 +87,16 @@ const LoginModal = (props: ILoginModalProps) => {
               />
             </Col>
           </Row>
-          <div className="mt-1">&nbsp;</div>
-          <Alert color="warning">
-            <Link to="/account/reset/request" data-cy="forgetYourPasswordSelector">
-              <Translate contentKey="login.password.forgot">Did you forget your password?</Translate>
-            </Link>
-          </Alert>
-          <Alert color="warning">
-            <span>
-              <Translate contentKey="global.messages.info.register.noaccount">You don&apos;t have an account yet?</Translate>
-            </span>{' '}
-            <Link to="/account/register">
-              <Translate contentKey="global.messages.info.register.link">Register a new account</Translate>
-            </Link>
-          </Alert>
+
+          {/* Сообщение без кнопки регистрации */}
+          <div className="login-info-text">Нет своего аккаунта? Обратись к сотрудникам склада</div>
         </ModalBody>
-        <ModalFooter>
+        <ModalFooter className="login-modal-footer">
           <Button color="secondary" onClick={handleClose} tabIndex={1}>
-            <Translate contentKey="entity.action.cancel">Cancel</Translate>
+            Отмена
           </Button>{' '}
           <Button color="primary" type="submit" data-cy="submit">
-            <Translate contentKey="login.form.button">Sign in</Translate>
+            Начать работу
           </Button>
         </ModalFooter>
       </Form>

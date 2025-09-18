@@ -33,8 +33,8 @@ spring:
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     url: jdbc:postgresql://localhost:5432/wmmapp
-    username: wmmapp
-    password:
+    username: postgres
+    password: Dima-5035!
     hikari:
       poolName: Hikari
       auto-commit: false

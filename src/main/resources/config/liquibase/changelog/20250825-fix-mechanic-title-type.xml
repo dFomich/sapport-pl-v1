@@ -1,0 +1,11 @@
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.23.xsd">
+
+  <changeSet id="20250825-fix-mechanic-title-type" author="wmm">
+    <!-- если вдруг title был bytea — меняем на varchar(255) -->
+    <modifyDataType tableName="mechanic_tile" columnName="title" newDataType="varchar(255)"/>
+  </changeSet>
+
+</databaseChangeLog>

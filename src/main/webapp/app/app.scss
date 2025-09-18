@@ -2,9 +2,16 @@
 @import 'bootstrap-variables';
 // Import Bootstrap source files from node_modules
 @import 'bootstrap/scss/bootstrap';
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
 body {
   background: #fafafa;
-  margin: 0;
 }
 
 a {
@@ -22,41 +29,49 @@ a {
   }
 }
 
+/* ==========================================================================
+  Layout fix for sticky footer
+========================================================================== */
 .app-container {
-  box-sizing: border-box;
-  .view-container {
-    width: 100%;
-    height: calc(100% - 40px);
-    overflow-y: auto;
-    overflow-x: hidden;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.view-container {
+  flex: 1; // Контент тянется на всю высоту
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem;
+
+  .card {
     padding: 1rem;
-    .card {
-      padding: 1rem;
-    }
-    .view-routes {
+  }
+
+  .view-routes {
+    height: 100%;
+    > div {
       height: 100%;
-      > div {
-        height: 100%;
-      }
     }
   }
 }
 
-.fullscreen {
-  position: fixed;
-  top: 100px;
-  left: 0;
-  width: 99% !important;
-  height: calc(100vh - 110px) !important;
-  margin: 5px;
-  z-index: 1000;
-  padding: 5px 25px 50px 25px !important;
+footer {
+  margin-top: auto;
+  width: 100%;
+  background: linear-gradient(180deg, #353d47, #2a2f36);
+  color: #bbb;
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 /* ==========================================================================
 Browser Upgrade Prompt
 ========================================================================== */
-
 .browserupgrade {
   margin: 0.2em 0;
   background: #ccc;
@@ -67,7 +82,6 @@ Browser Upgrade Prompt
 /* ==========================================================================
 Custom button styles
 ========================================================================== */
-
 .icon-button > .btn {
   background-color: transparent;
   border-color: transparent;
@@ -91,8 +105,6 @@ Generic styles
 .invalid-feedback {
   display: inline;
 }
-
-/* other generic styles */
 
 .title {
   font-size: 1.25em;
@@ -131,7 +143,6 @@ Generic styles
 }
 
 /* padding helpers */
-
 @mixin pad($size, $side) {
   @if $size== '' {
     @if $side== '' {
@@ -220,11 +231,11 @@ Generic styles
 @include no-padding('bottom');
 @include no-padding('all');
 
-/* end of padding helpers */
-
 .no-margin {
   margin: 0;
 }
+
+/* vertical offsets */
 @mixin voffset($size) {
   @if $size== '' {
     .voffset {
@@ -256,7 +267,6 @@ Generic styles
 /* ==========================================================================
 make sure browsers use the pointer cursor for anchors, even with no href
 ========================================================================== */
-
 a:hover {
   cursor: pointer;
 }
@@ -281,7 +291,6 @@ a.anchor-btn:hover {
 /* ==========================================================================
 Metrics and Health styles
 ========================================================================== */
-
 #threadDump .popover,
 #healthCheck .popover {
   top: inherit;
@@ -305,9 +314,7 @@ Metrics and Health styles
   min-width: 400px;
 }
 
-/* bootstrap 3 input-group 100% width
-http://stackoverflow.com/questions/23436430/bootstrap-3-input-group-100-width */
-
+/* bootstrap 3 input-group 100% width */
 .width-min {
   width: 1% !important;
 }

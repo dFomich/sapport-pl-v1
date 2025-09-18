@@ -1,0 +1,31 @@
+{
+  "annotations": {
+    "changelogDate": "20250825141842"
+  },
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "name",
+      "fieldType": "String",
+      "fieldValidateRules": ["required", "maxlength"],
+      "fieldValidateRulesMaxlength": "64"
+    },
+    {
+      "fieldName": "active",
+      "fieldType": "Boolean",
+      "fieldValidateRules": ["required"]
+    }
+  ],
+  "name": "ProductCategory",
+  "relationships": [
+    {
+      "otherEntityField": "title",
+      "otherEntityName": "mechanicTile",
+      "otherEntityRelationshipName": "categories",
+      "relationshipName": "tiles",
+      "relationshipSide": "right",
+      "relationshipType": "many-to-many"
+    }
+  ],
+  "searchEngine": "no"
+}

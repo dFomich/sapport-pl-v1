@@ -9,6 +9,7 @@ import com.wmm.app.security.AuthoritiesConstants;
 import com.wmm.app.security.SecurityUtils;
 import com.wmm.app.service.dto.AdminUserDTO;
 import com.wmm.app.service.dto.UserDTO;
+import com.wmm.app.web.rest.errors.BadRequestAlertException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -22,6 +23,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import tech.jhipster.security.RandomUtil;
 
 /**
@@ -34,11 +36,8 @@ public class UserService {
     private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
-
     private final PasswordEncoder passwordEncoder;
-
     private final AuthorityRepository authorityRepository;
-
     private final CacheManager cacheManager;
 
     public UserService(
@@ -58,7 +57,6 @@ public class UserService {
         return userRepository
             .findOneByActivationKey(key)
             .map(user -> {
-                // activate given user for the registration key.
                 user.setActivated(true);
                 user.setActivationKey(null);
                 this.clearUserCaches(user);
@@ -82,6 +80,9 @@ public class UserService {
     }
 
     public Optional<User> requestPasswordReset(String mail) {
+        if (!StringUtils.hasText(mail)) {
+            return Optional.empty();
+        }
         return userRepository
             .findOneByEmailIgnoreCase(mail)
             .filter(User::isActivated)
@@ -93,6 +94,9 @@ public class UserService {
             });
     }
 
+    /**
+     * Self-registration flow (kept for completeness). We guard email lookups when empty.
+     */
     public User registerUser(AdminUserDTO userDTO, String password) {
         userRepository
             .findOneByLogin(userDTO.getLogin().toLowerCase())
@@ -102,33 +106,33 @@ public class UserService {
                     throw new UsernameAlreadyUsedException();
                 }
             });
-        userRepository
-            .findOneByEmailIgnoreCase(userDTO.getEmail())
-            .ifPresent(existingUser -> {
-                boolean removed = removeNonActivatedUser(existingUser);
-                if (!removed) {
-                    throw new EmailAlreadyUsedException();
-                }
-            });
+
+        if (StringUtils.hasText(userDTO.getEmail())) {
+            userRepository
+                .findOneByEmailIgnoreCase(userDTO.getEmail())
+                .ifPresent(existingUser -> {
+                    boolean removed = removeNonActivatedUser(existingUser);
+                    if (!removed) {
+                        throw new EmailAlreadyUsedException();
+                    }
+                });
+        }
+
         User newUser = new User();
-        String encryptedPassword = passwordEncoder.encode(password);
         newUser.setLogin(userDTO.getLogin().toLowerCase());
-        // new user gets initially a generated password
-        newUser.setPassword(encryptedPassword);
+        newUser.setPassword(passwordEncoder.encode(password));
         newUser.setFirstName(userDTO.getFirstName());
         newUser.setLastName(userDTO.getLastName());
-        if (userDTO.getEmail() != null) {
-            newUser.setEmail(userDTO.getEmail().toLowerCase());
-        }
+        newUser.setEmail(StringUtils.hasText(userDTO.getEmail()) ? userDTO.getEmail().toLowerCase() : null);
         newUser.setImageUrl(userDTO.getImageUrl());
-        newUser.setLangKey(userDTO.getLangKey());
-        // new user is not active
+        newUser.setLangKey(StringUtils.hasText(userDTO.getLangKey()) ? userDTO.getLangKey() : Constants.DEFAULT_LANGUAGE);
         newUser.setActivated(false);
-        // new user gets registration key
         newUser.setActivationKey(RandomUtil.generateActivationKey());
+
         Set<Authority> authorities = new HashSet<>();
         authorityRepository.findById(AuthoritiesConstants.USER).ifPresent(authorities::add);
         newUser.setAuthorities(authorities);
+
         userRepository.save(newUser);
         this.clearUserCaches(newUser);
         LOG.debug("Created Information for User: {}", newUser);
@@ -145,35 +149,45 @@ public class UserService {
         return true;
     }
 
+    /**
+     * Admin creates user (our custom flow).
+     */
     public User createUser(AdminUserDTO userDTO) {
         User user = new User();
+
         user.setLogin(userDTO.getLogin().toLowerCase());
         user.setFirstName(userDTO.getFirstName());
         user.setLastName(userDTO.getLastName());
-        if (userDTO.getEmail() != null) {
-            user.setEmail(userDTO.getEmail().toLowerCase());
-        }
+        user.setEmail(StringUtils.hasText(userDTO.getEmail()) ? userDTO.getEmail().toLowerCase() : null);
         user.setImageUrl(userDTO.getImageUrl());
-        if (userDTO.getLangKey() == null) {
-            user.setLangKey(Constants.DEFAULT_LANGUAGE); // default language
-        } else {
-            user.setLangKey(userDTO.getLangKey());
+        user.setLangKey(StringUtils.hasText(userDTO.getLangKey()) ? userDTO.getLangKey() : Constants.DEFAULT_LANGUAGE);
+
+        if (!StringUtils.hasText(userDTO.getPassword())) {
+            throw new BadRequestAlertException("Password is required", "userManagement", "passwordrequired");
         }
-        String encryptedPassword = passwordEncoder.encode(RandomUtil.generatePassword());
-        user.setPassword(encryptedPassword);
-        user.setResetKey(RandomUtil.generateResetKey());
-        user.setResetDate(Instant.now());
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+
+        // Activate immediately (email not used in this project)
         user.setActivated(true);
-        if (userDTO.getAuthorities() != null) {
-            Set<Authority> authorities = userDTO
+
+        // Roles: if none selected -> ROLE_USER
+        Set<Authority> authorities = new HashSet<>();
+        if (userDTO.getAuthorities() != null && !userDTO.getAuthorities().isEmpty()) {
+            authorities = userDTO
                 .getAuthorities()
                 .stream()
                 .map(authorityRepository::findById)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toSet());
-            user.setAuthorities(authorities);
+        } else {
+            authorityRepository.findById(AuthoritiesConstants.USER).ifPresent(authorities::add);
         }
+        user.setAuthorities(authorities);
+
+        user.setResetKey(null);
+        user.setResetDate(null);
+
         userRepository.save(user);
         this.clearUserCaches(user);
         LOG.debug("Created Information for User: {}", user);
@@ -182,9 +196,6 @@ public class UserService {
 
     /**
      * Update all information for a specific user, and return the modified user.
-     *
-     * @param userDTO user to update.
-     * @return updated user.
      */
     public Optional<AdminUserDTO> updateUser(AdminUserDTO userDTO) {
         return Optional.of(userRepository.findById(userDTO.getId()))
@@ -192,24 +203,35 @@ public class UserService {
             .map(Optional::get)
             .map(user -> {
                 this.clearUserCaches(user);
+
                 user.setLogin(userDTO.getLogin().toLowerCase());
                 user.setFirstName(userDTO.getFirstName());
                 user.setLastName(userDTO.getLastName());
-                if (userDTO.getEmail() != null) {
-                    user.setEmail(userDTO.getEmail().toLowerCase());
-                }
+                user.setEmail(StringUtils.hasText(userDTO.getEmail()) ? userDTO.getEmail().toLowerCase() : null);
                 user.setImageUrl(userDTO.getImageUrl());
+                user.setLangKey(StringUtils.hasText(userDTO.getLangKey()) ? userDTO.getLangKey() : Constants.DEFAULT_LANGUAGE);
+
+                // allow admin to toggle activation
                 user.setActivated(userDTO.isActivated());
-                user.setLangKey(userDTO.getLangKey());
+
+                // password change if provided
+                if (StringUtils.hasText(userDTO.getPassword())) {
+                    user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+                }
+
+                // roles
                 Set<Authority> managedAuthorities = user.getAuthorities();
                 managedAuthorities.clear();
-                userDTO
-                    .getAuthorities()
-                    .stream()
-                    .map(authorityRepository::findById)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .forEach(managedAuthorities::add);
+                if (userDTO.getAuthorities() != null) {
+                    userDTO
+                        .getAuthorities()
+                        .stream()
+                        .map(authorityRepository::findById)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .forEach(managedAuthorities::add);
+                }
+
                 userRepository.save(user);
                 this.clearUserCaches(user);
                 LOG.debug("Changed Information for User: {}", user);
@@ -230,12 +252,6 @@ public class UserService {
 
     /**
      * Update basic information (first name, last name, email, language) for the current user.
-     *
-     * @param firstName first name of user.
-     * @param lastName  last name of user.
-     * @param email     email id of user.
-     * @param langKey   language key.
-     * @param imageUrl  image URL of user.
      */
     public void updateUser(String firstName, String lastName, String email, String langKey, String imageUrl) {
         SecurityUtils.getCurrentUserLogin()
@@ -243,10 +259,8 @@ public class UserService {
             .ifPresent(user -> {
                 user.setFirstName(firstName);
                 user.setLastName(lastName);
-                if (email != null) {
-                    user.setEmail(email.toLowerCase());
-                }
-                user.setLangKey(langKey);
+                user.setEmail(StringUtils.hasText(email) ? email.toLowerCase() : null);
+                user.setLangKey(StringUtils.hasText(langKey) ? langKey : Constants.DEFAULT_LANGUAGE);
                 user.setImageUrl(imageUrl);
                 userRepository.save(user);
                 this.clearUserCaches(user);
@@ -292,7 +306,6 @@ public class UserService {
 
     /**
      * Not activated users should be automatically deleted after 3 days.
-     * <p>
      * This is scheduled to get fired every day, at 01:00 (am).
      */
     @Scheduled(cron = "0 0 1 * * ?")

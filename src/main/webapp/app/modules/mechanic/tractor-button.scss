@@ -1,0 +1,117 @@
+.modern-cart-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #2c3e50, #3a506b);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  transition:
+    transform 0.3s ease,
+    background 0.3s ease;
+  z-index: 1200;
+  overflow: hidden; // 👈 важно для ripple
+
+  &:hover {
+    background: linear-gradient(145deg, #34495e, #4a657a);
+    transform: scale(1.05);
+  }
+
+  &.bump {
+    animation: bump 0.6s ease;
+  }
+}
+
+.cart-icon {
+  width: 26px;
+  height: 20px;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 4px;
+    width: 16px;
+    height: 6px;
+    border: 2px solid #fff;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+  }
+}
+
+.cart-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: #ff4d4f;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 50%;
+  padding: 3px 7px;
+  min-width: 22px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  animation: shake 0.4s;
+}
+
+/* Ripple эффект */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(0);
+  animation: ripple 0.6s linear;
+  pointer-events: none;
+  width: 120px;
+  height: 120px;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+@keyframes bump {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.15);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes shake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.8.xsd">
+
+  <!-- BUD -->
+  <changeSet id="20250825-warehouse-seed-bud" author="wmm" context="dev,prod">
+    <preConditions onFail="MARK_RAN">
+      <tableExists tableName="warehouse"/>
+      <sqlCheck expectedResult="0">select count(*) from warehouse where code = 'BUD'</sqlCheck>
+    </preConditions>
+    <insert tableName="warehouse">
+      <column name="id" valueComputed="nextval('sequence_generator')"/>
+      <column name="code" value="BUD"/>
+      <column name="name" value="BUD"/>
+      <column name="active" valueBoolean="true"/>
+    </insert>
+  </changeSet>
+
+  <!-- CLD -->
+  <changeSet id="20250825-warehouse-seed-cld" author="wmm" context="dev,prod">
+    <preConditions onFail="MARK_RAN">
+      <tableExists tableName="warehouse"/>
+      <sqlCheck expectedResult="0">select count(*) from warehouse where code = 'CLD'</sqlCheck>
+    </preConditions>
+    <insert tableName="warehouse">
+      <column name="id" valueComputed="nextval('sequence_generator')"/>
+      <column name="code" value="CLD"/>
+      <column name="name" value="CLD"/>
+      <column name="active" valueBoolean="true"/>
+    </insert>
+  </changeSet>
+
+  <!-- PRT -->
+  <changeSet id="20250825-warehouse-seed-prt" author="wmm" context="dev,prod">
+    <preConditions onFail="MARK_RAN">
+      <tableExists tableName="warehouse"/>
+      <sqlCheck expectedResult="0">select count(*) from warehouse where code = 'PRT'</sqlCheck>
+    </preConditions>
+    <insert tableName="warehouse">
+      <column name="id" valueComputed="nextval('sequence_generator')"/>
+      <column name="code" value="PRT"/>
+      <column name="name" value="PRT"/>
+      <column name="active" valueBoolean="true"/>
+    </insert>
+  </changeSet>
+
+</databaseChangeLog>

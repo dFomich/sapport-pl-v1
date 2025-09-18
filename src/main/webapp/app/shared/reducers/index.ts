@@ -1,33 +1,47 @@
-import { ReducersMapObject } from '@reduxjs/toolkit';
 import { loadingBarReducer as loadingBar } from 'react-redux-loading-bar';
 
+// общие редьюсеры
+import authentication from './authentication';
+import applicationProfile from './application-profile';
+import locale from './locale';
+
+// админка
 import administration from 'app/modules/administration/administration.reducer';
 import userManagement from 'app/modules/administration/user-management/user-management.reducer';
+
+// аккаунт
 import register from 'app/modules/account/register/register.reducer';
 import activate from 'app/modules/account/activate/activate.reducer';
 import password from 'app/modules/account/password/password.reducer';
-import settings from 'app/modules/account/settings/settings.reducer';
 import passwordReset from 'app/modules/account/password-reset/password-reset.reducer';
-import entitiesReducers from 'app/entities/reducers';
-import applicationProfile from './application-profile';
-import authentication from './authentication';
-import locale from './locale';
-/* jhipster-needle-add-reducer-import - JHipster will add reducer here */
+import settings from 'app/modules/account/settings/settings.reducer';
 
-const rootReducer: ReducersMapObject = {
+// сущности (см. пункт 2)
+import entitiesReducers from 'app/entities/reducers';
+
+/**
+ * Никаких «state.entities.…» — раскладываем сущности на верхний уровень,
+ * чтобы селекторы `state.warehouse`, `state.productCategory`, `state.mechanicTile`
+ * продолжили работать.
+ */
+const rootReducer = {
   authentication,
-  locale,
   applicationProfile,
   administration,
   userManagement,
+
   register,
   activate,
-  passwordReset,
   password,
+  passwordReset,
   settings,
-  loadingBar,
-  /* jhipster-needle-add-reducer-combine - JHipster will add reducer here */
+
+  locale,
+
+  // 👇 развернули сущности в корень стора
   ...entitiesReducers,
+
+  loadingBar,
 };
 
 export default rootReducer;
