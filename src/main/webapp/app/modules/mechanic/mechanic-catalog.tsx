@@ -10,7 +10,6 @@ import TractorButton from './tractor-button';
 
 import './mechanic-catalog.scss';
 
-// Тип плитки
 type Tile = {
   id: number;
   title: string;
@@ -75,8 +74,8 @@ const MechanicCatalog: React.FC = () => {
   const isOrdering = Boolean(cart.state.orderId);
 
   const [zoomUrl, setZoomUrl] = useState<string | null>(null);
+  const [zoomComment, setZoomComment] = useState<string>('');
 
-  // Загрузка складов
   useEffect(() => {
     axios.get<string[]>('/api/inventory/storage-types').then(r => {
       const list = r.data || [];
@@ -85,7 +84,6 @@ const MechanicCatalog: React.FC = () => {
     });
   }, []);
 
-  // Загрузка категорий
   useEffect(() => {
     if (!activeSt) return;
     axios
@@ -95,7 +93,6 @@ const MechanicCatalog: React.FC = () => {
       .then(r => setCategories(r.data || []));
   }, [activeSt]);
 
-  // Загрузка плиток (всех, потом фильтрация)
   const load = async (st = activeSt) => {
     if (!st) return;
     setLoading(true);
@@ -164,7 +161,7 @@ const MechanicCatalog: React.FC = () => {
             </Button>
           </div>
           <Button color="primary" onClick={() => setStartDlg(true)} disabled={isOrdering}>
-            Приступить к заказу
+            Приступить к созданию заказу
           </Button>
         </Col>
       </Row>
@@ -210,7 +207,12 @@ const MechanicCatalog: React.FC = () => {
               key={t.id}
               className={clsx('tile', { 'tile--selected': already > 0 })}
               style={{ background: colorByStock(t.availableStock), cursor: !isOrdering ? 'pointer' : 'default' }}
-              onClick={() => !isOrdering && t.imageUrl && setZoomUrl(t.imageUrl)}
+              onClick={() => {
+                if (!isOrdering && t.imageUrl) {
+                  setZoomUrl(t.imageUrl);
+                  setZoomComment(t.comment || '');
+                }
+              }}
             >
               <div className="tile-head">
                 <div className="tile-title">{t.title}</div>
@@ -261,8 +263,19 @@ const MechanicCatalog: React.FC = () => {
         </Col>
       </Row>
 
-      <div className={clsx('modal-image-wrapper', { open: !!zoomUrl })} onClick={() => setZoomUrl(null)}>
-        {zoomUrl && <img src={zoomUrl} alt="zoom" className="modal-image" onClick={e => e.stopPropagation()} />}
+      <div
+        className={clsx('modal-image-wrapper', { open: !!zoomUrl })}
+        onClick={() => {
+          setZoomUrl(null);
+          setZoomComment('');
+        }}
+      >
+        {zoomUrl && (
+          <div className="modal-content-inner" onClick={e => e.stopPropagation()}>
+            <img src={zoomUrl} alt="zoom" className="modal-image" />
+            {zoomComment && <div className="modal-comment">{zoomComment}</div>}
+          </div>
+        )}
       </div>
 
       <StartOrderDialog

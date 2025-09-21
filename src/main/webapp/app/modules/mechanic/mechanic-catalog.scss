@@ -176,3 +176,32 @@
 .modal-image-wrapper.open .modal-image {
   transform: scale(1);
 }
+
+.modal-content-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.modal-comment {
+  color: white;
+  max-width: 80%;
+  text-align: center;
+  font-size: 1rem;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-top: 12px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
