@@ -161,7 +161,7 @@ const MechanicCatalog: React.FC = () => {
             </Button>
           </div>
           <Button color="primary" onClick={() => setStartDlg(true)} disabled={isOrdering}>
-            Приступить к созданию заказу
+            Приступить к созданию заказа
           </Button>
         </Col>
       </Row>
