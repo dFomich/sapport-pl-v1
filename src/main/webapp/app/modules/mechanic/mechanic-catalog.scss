@@ -143,3 +143,36 @@
   opacity: 1;
   background: rgba(0, 123, 255, 0.25); // синий overlay при наведении
 }
+.modal-image-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1050;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.modal-image-wrapper.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-image {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 8px;
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease;
+  transform: scale(0.9);
+}
+
+.modal-image-wrapper.open .modal-image {
+  transform: scale(1);
+}

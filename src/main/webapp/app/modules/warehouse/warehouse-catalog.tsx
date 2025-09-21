@@ -31,65 +31,77 @@ const WarehouseCatalog: React.FC = () => {
   const [category, setCategory] = useState<string>('');
 
   const [q, setQ] = useState('');
-  const [tiles, setTiles] = useState<Tile[]>([]);
+  const [allTiles, setAllTiles] = useState<Tile[]>([]); // все плитки
   const [page, setPage] = useState(0);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const [view, setView] = useState<'large' | 'medium' | 'list'>('medium');
   const [isEditing, setIsEditing] = useState(false);
 
+  // склады
   useEffect(() => {
+    let mounted = true;
     axios.get<string[]>('/api/inventory/storage-types').then(r => {
+      if (!mounted) return;
       const list = r.data || [];
       setStorages(list);
       if (list.length && !activeSt) setActiveSt(list[0]);
     });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
+  // категории
   useEffect(() => {
     if (!activeSt) return;
+    let mounted = true;
     axios.get<string[]>('/api/mechanic/catalog/categories', { params: { storageType: activeSt } }).then(r => {
+      if (!mounted) return;
       setCategories(r.data || []);
     });
+    return () => {
+      mounted = false;
+    };
   }, [activeSt]);
 
-  const load = async () => {
-    if (!activeSt) return;
+  // загрузка всех плиток
+  const load = async (st = activeSt) => {
+    if (!st) return;
     setLoading(true);
-    const res = await axios.get<Tile[]>(`/api/mechanic/catalog/tiles`, {
-      params: {
-        storageType: activeSt,
-        q: q || undefined,
-        category: category || undefined,
-        page,
-        size: pageSize,
-        sort: 'title,asc',
-      },
+    const res = await axios.get<Tile[]>('/api/mechanic/catalog/tiles', {
+      params: { storageType: st, sort: 'title,asc', size: 1000 }, // 👈 загружаем максимум
     });
-    setTiles(res.data);
-    setTotal(Number(res.headers['x-total-count'] || 0));
+    setAllTiles(res.data || []);
+    setPage(0);
     setLoading(false);
   };
 
   useEffect(() => {
-    if (activeSt) {
-      setPage(0);
-      load();
-    }
-  }, [activeSt, category, q]);
+    if (activeSt) load(activeSt);
+  }, [activeSt]);
 
+  // перезагрузка при фильтрации
   useEffect(() => {
-    load();
-  }, [page]);
+    setPage(0);
+  }, [q, category]);
 
+  // фильтрация и пагинация
+  const filtered = allTiles.filter(t => {
+    const matchTitle = q ? t.title.toLowerCase().includes(q.toLowerCase()) : true;
+    const matchCategory = category ? t.categories.includes(category) : true;
+    return matchTitle && matchCategory;
+  });
+
+  const total = filtered.length;
   const pages = Math.max(1, Math.ceil(total / pageSize));
+  const paginated = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
   return (
     <div className="container mt-4 mechanic-catalog">
       <Row className="mb-2 align-items-center">
         <Col>
-          <h4>Витрина старшего кладовщика</h4>
+          <h4>Так выглядит витрина у механиков</h4>
         </Col>
         <Col className="text-end">
           <div className="btn-group me-2">
@@ -109,6 +121,7 @@ const WarehouseCatalog: React.FC = () => {
         </Col>
       </Row>
 
+      {/* Вкладки складов */}
       <div className="mb-3">
         {storages.map(s => (
           <Button key={s} color={s === activeSt ? 'primary' : 'secondary'} className="me-2 mb-2" onClick={() => setActiveSt(s)}>
@@ -117,6 +130,7 @@ const WarehouseCatalog: React.FC = () => {
         ))}
       </div>
 
+      {/* Фильтры */}
       <Row className="g-2 align-items-center mb-3">
         <Col md="6">
           <Input placeholder="Поиск по названию" value={q} onChange={e => setQ(e.target.value)} />
@@ -136,12 +150,13 @@ const WarehouseCatalog: React.FC = () => {
         </Col>
       </Row>
 
+      {/* Плитки / список */}
       {view !== 'list' ? (
         <div
           className="tiles-grid"
           style={{ display: 'grid', gridTemplateColumns: view === 'large' ? 'repeat(5, 1fr)' : 'repeat(10, 1fr)', gap: 12 }}
         >
-          {tiles.map(t => (
+          {paginated.map(t => (
             <div
               key={t.id}
               className="tile"
@@ -178,11 +193,11 @@ const WarehouseCatalog: React.FC = () => {
               )}
             </div>
           ))}
-          {tiles.length === 0 && !loading && <div className="text-muted">Нет данных</div>}
+          {paginated.length === 0 && !loading && <div className="text-muted">Нет данных</div>}
         </div>
       ) : (
         <div className="list-group">
-          {tiles.map(t => (
+          {paginated.map(t => (
             <div
               key={t.id}
               className={clsx('list-group-item d-flex justify-content-between align-items-center', { 'opacity-75': t.availableStock <= 0 })}
@@ -210,10 +225,11 @@ const WarehouseCatalog: React.FC = () => {
               )}
             </div>
           ))}
-          {tiles.length === 0 && !loading && <div className="text-muted">Нет данных</div>}
+          {paginated.length === 0 && !loading && <div className="text-muted">Нет данных</div>}
         </div>
       )}
 
+      {/* Пагинация */}
       <Row className="mt-3">
         <Col className="d-flex justify-content-between">
           <Button disabled={page === 0} onClick={() => setPage(p => p - 1)}>

@@ -10,6 +10,7 @@ import TractorButton from './tractor-button';
 
 import './mechanic-catalog.scss';
 
+// Тип плитки
 type Tile = {
   id: number;
   title: string;
@@ -58,22 +59,24 @@ const flyToCart = (fromEl: HTMLElement, toEl: HTMLElement) => {
 
 const MechanicCatalog: React.FC = () => {
   const cart = useCart();
+  const cartButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const [storages, setStorages] = useState<string[]>([]);
   const [activeSt, setActiveSt] = useState<string>('');
   const [categories, setCategories] = useState<string[]>([]);
   const [category, setCategory] = useState('');
   const [q, setQ] = useState('');
-  const [tiles, setTiles] = useState<Tile[]>([]);
-  const [total, setTotal] = useState(0);
+  const [allTiles, setAllTiles] = useState<Tile[]>([]);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<'large' | 'medium' | 'list'>('medium');
   const [startDlg, setStartDlg] = useState(false);
   const [cartDlg, setCartDlg] = useState(false);
-  const cartButtonRef = useRef<HTMLButtonElement | null>(null);
   const isOrdering = Boolean(cart.state.orderId);
 
+  const [zoomUrl, setZoomUrl] = useState<string | null>(null);
+
+  // Загрузка складов
   useEffect(() => {
     axios.get<string[]>('/api/inventory/storage-types').then(r => {
       const list = r.data || [];
@@ -82,6 +85,7 @@ const MechanicCatalog: React.FC = () => {
     });
   }, []);
 
+  // Загрузка категорий
   useEffect(() => {
     if (!activeSt) return;
     axios
@@ -91,23 +95,16 @@ const MechanicCatalog: React.FC = () => {
       .then(r => setCategories(r.data || []));
   }, [activeSt]);
 
-  const load = async (p = 0, st = activeSt, qStr = q, cat = category) => {
+  // Загрузка плиток (всех, потом фильтрация)
+  const load = async (st = activeSt) => {
     if (!st) return;
     setLoading(true);
     try {
       const res = await axios.get<Tile[]>('/api/mechanic/catalog/tiles', {
-        params: {
-          storageType: st,
-          q: qStr || undefined,
-          category: cat || undefined,
-          page: p,
-          size: pageSize,
-          sort: 'title,asc',
-        },
+        params: { storageType: st, sort: 'title,asc', size: 1000 },
       });
-      setTiles(res.data);
-      setTotal(Number(res.headers['x-total-count'] || 0));
-      setPage(p);
+      setAllTiles(res.data || []);
+      setPage(0);
     } catch (e) {
       console.error(e);
     }
@@ -115,13 +112,22 @@ const MechanicCatalog: React.FC = () => {
   };
 
   useEffect(() => {
-    if (activeSt) load(0, activeSt);
+    if (activeSt) load(activeSt);
   }, [activeSt]);
 
   useEffect(() => {
-    const t = setTimeout(() => load(0), 300);
-    return () => clearTimeout(t);
+    setPage(0);
   }, [q, category]);
+
+  const filtered = allTiles.filter(t => {
+    const matchTitle = q ? t.title.toLowerCase().includes(q.toLowerCase()) : true;
+    const matchCategory = category ? t.categories.includes(category) : true;
+    return matchTitle && matchCategory;
+  });
+
+  const total = filtered.length;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const paginated = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
   const inCartQty = (tileId: number) => cart.state.items.find(i => i.id === tileId)?.qty ?? 0;
 
@@ -194,7 +200,7 @@ const MechanicCatalog: React.FC = () => {
         className="tiles-grid"
         style={{ display: 'grid', gridTemplateColumns: view === 'large' ? 'repeat(5, 1fr)' : 'repeat(10, 1fr)', gap: 12 }}
       >
-        {tiles.map(t => {
+        {paginated.map(t => {
           const already = inCartQty(t.id);
           const leftToAdd = Math.max(0, t.availableStock - already);
           const disabled = leftToAdd <= 0;
@@ -203,7 +209,8 @@ const MechanicCatalog: React.FC = () => {
             <div
               key={t.id}
               className={clsx('tile', { 'tile--selected': already > 0 })}
-              style={{ background: colorByStock(t.availableStock) }}
+              style={{ background: colorByStock(t.availableStock), cursor: !isOrdering ? 'pointer' : 'default' }}
+              onClick={() => !isOrdering && t.imageUrl && setZoomUrl(t.imageUrl)}
             >
               <div className="tile-head">
                 <div className="tile-title">{t.title}</div>
@@ -237,22 +244,26 @@ const MechanicCatalog: React.FC = () => {
             </div>
           );
         })}
-        {tiles.length === 0 && !loading && <div className="text-muted">Нет данных</div>}
+        {paginated.length === 0 && !loading && <div className="text-muted">Нет данных</div>}
       </div>
 
       <Row className="mt-3">
         <Col className="d-flex justify-content-between">
-          <Button disabled={page === 0} onClick={() => load(page - 1)}>
+          <Button disabled={page === 0} onClick={() => setPage(p => p - 1)}>
             Назад
           </Button>
           <div>
-            Стр. {page + 1} / {Math.max(1, Math.ceil(total / pageSize))}
+            Стр. {page + 1} / {pages}
           </div>
-          <Button disabled={(page + 1) * pageSize >= total} onClick={() => load(page + 1)}>
+          <Button disabled={page + 1 >= pages} onClick={() => setPage(p => p + 1)}>
             Вперёд
           </Button>
         </Col>
       </Row>
+
+      <div className={clsx('modal-image-wrapper', { open: !!zoomUrl })} onClick={() => setZoomUrl(null)}>
+        {zoomUrl && <img src={zoomUrl} alt="zoom" className="modal-image" onClick={e => e.stopPropagation()} />}
+      </div>
 
       <StartOrderDialog
         open={startDlg}
