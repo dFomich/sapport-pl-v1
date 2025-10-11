@@ -79,42 +79,114 @@ const WarehouseOrders = () => {
     const order = orders.find(o => o.orderId === orderId);
     if (!order) return;
 
-    const doc = new jsPDF();
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     doc.setFont('DejaVuSans', 'normal');
-    doc.setFontSize(14);
 
-    doc.text(`Заявка #${order.orderId}`, 14, 15);
-    doc.text(`Дата: ${format(new Date(order.createdAt), 'dd.MM.yyyy HH:mm')}`, 14, 23);
-    doc.text(`Механик: ${order.mechanicLogin}`, 14, 31);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginLeft = 50;
+    const marginRight = 50;
 
-    const body: any[][] = [];
-    for (let i = 0; i < order.lines.length; i++) {
-      const line = order.lines[i];
-      const qrDataUrl = await QRCode.toDataURL(line.materialCode, { margin: 1 });
-      body.push([i + 1, line.materialCode, line.title, line.qty.toString(), { image: qrDataUrl, fit: [25, 25] }]);
+    const logoWidth = 110;
+    const logoHeight = 35;
+    const qrSize = 50;
+    const cellHeight = qrSize + 14;
+
+    // === ГРАДИЕНТ ===
+    const gradientHeight = 120;
+    for (let y = 0; y < gradientHeight; y++) {
+      const t = y / gradientHeight;
+      const r = 225 + t * 25;
+      const g = 235 + t * 20;
+      const b = 255;
+      doc.setFillColor(r, g, b);
+      doc.rect(0, y, pageWidth, 1, 'F');
     }
 
+    // === ЛОГОТИП (справа) ===
+    try {
+      const logo = new Image();
+      logo.src = 'content/images/logo-sapport.png';
+      await new Promise<void>(resolve => {
+        logo.onload = () => resolve();
+        logo.onerror = () => resolve();
+      });
+      const logoX = pageWidth - logoWidth - marginRight;
+      const logoY = 25;
+      doc.addImage(logo, 'PNG', logoX, logoY, logoWidth, logoHeight, '', 'FAST');
+    } catch {
+      console.warn('⚠️ Логотип не найден — пропускаем');
+    }
+
+    // === ЗАГОЛОВОК ===
+    const headerY = 110;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(18);
+    doc.text(`Заявка на выдачу #${order.orderId}`, marginLeft, headerY);
+    doc.setFontSize(12);
+    doc.text(`Дата: ${format(new Date(order.createdAt), 'dd.MM.yyyy HH:mm')}`, marginLeft, headerY + 22);
+    doc.text(`Механик: ${order.mechanicLogin}`, marginLeft, headerY + 40);
+
+    // === Тонкая разделительная линия под шапкой ===
+    doc.setDrawColor(210, 210, 210);
+    doc.setLineWidth(0.6);
+    doc.line(marginLeft, headerY + 55, pageWidth - marginRight, headerY + 55);
+
+    // === Подготовка таблицы ===
+    const rows: any[] = [];
+    for (let i = 0; i < order.lines.length; i++) {
+      const line = order.lines[i];
+      const qrDataUrl = await QRCode.toDataURL(line.materialCode, { margin: 0 });
+      rows.push([i + 1, line.materialCode, line.title, String(line.qty), { image: qrDataUrl }]);
+    }
+
+    // === Таблица ===
     autoTable(doc, {
+      startY: headerY + 70,
       head: [['#', 'Код', 'Название', 'Кол-во', 'QR-код']],
-      body,
-      startY: 40,
+      body: rows.map(r => [r[0], r[1], r[2], r[3], '']),
       styles: {
-        minCellHeight: 30,
-        valign: 'middle',
         font: 'DejaVuSans',
-        fontStyle: 'normal',
+        fontSize: 11,
+        cellPadding: 6,
+        minCellHeight: cellHeight,
+        valign: 'middle',
       },
+      headStyles: {
+        fillColor: [48, 84, 150],
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center',
+        minCellHeight: 22,
+      },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 35 },
+        1: { halign: 'center', cellWidth: 100 },
+        2: { cellWidth: 260 },
+        3: { halign: 'center', cellWidth: 60 },
+        4: { halign: 'center', cellWidth: 80 }, // 👈 уменьшено, чтобы QR не упирался в край
+      },
+      margin: { left: marginLeft, right: marginRight }, // 👈 фикс: равные поля
+      tableWidth: pageWidth - marginLeft - marginRight, // 👈 обязательная коррекция ширины
       didDrawCell(data) {
-        if (data.column.index === 4 && data.cell.section === 'body') {
-          const cell = body[data.row.index][4] as { image: string; fit: number[] };
-          if (cell?.image) {
-            doc.addImage(cell.image, 'PNG', data.cell.x + 2, data.cell.y + 2, 25, 25);
+        if (data.cell.section === 'body' && data.column.index === 4) {
+          const src = rows[data.row.index]?.[4]?.image;
+          if (src) {
+            const x = data.cell.x + (data.cell.width - qrSize) / 2;
+            const y = data.cell.y + (data.cell.height - qrSize) / 2;
+            doc.addImage(src, 'PNG', x, y, qrSize, qrSize);
           }
         }
       },
     });
 
-    doc.save(`order_${order.orderId}.pdf`);
+    // === ФУТЕР ===
+    doc.setFontSize(10);
+    doc.setTextColor(130, 130, 130);
+    doc.text('Документ сгенерирован автоматически системой SAPPort', marginLeft, pageHeight - 45);
+    doc.text('© 2025 SAPPort', pageWidth - 130, pageHeight - 45);
+
+    doc.save(`SAPPort_order_${order.orderId}.pdf`);
   };
 
   const markOrderAsCompleted = async (orderId: string) => {

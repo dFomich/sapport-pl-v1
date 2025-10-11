@@ -7,6 +7,7 @@ import com.wmm.app.repository.InventoryCurrentRepository;
 import com.wmm.app.repository.MechanicOrderRepository;
 import com.wmm.app.service.MechanicOrderService;
 import com.wmm.app.web.rest.errors.BadRequestAlertException;
+import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -97,6 +98,7 @@ public class MechanicOrderResource {
 
     @DeleteMapping("/cleanup")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @Transactional
     public ResponseEntity<Void> cleanupOldOrders() {
         Instant cutoff = Instant.now().minus(30, ChronoUnit.DAYS);
         orderRepo.deleteByCreatedAtBefore(cutoff);
