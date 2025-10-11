@@ -32,6 +32,7 @@ import AdminHomePage from 'app/modules/homepages/AdminHomePage';
 import RoleRedirect from 'app/shared/auth/role-redirect';
 import NewsManagementPage from 'app/modules/homepages/NewsManagementPage';
 import GalleryManagementPage from 'app/modules/homepages/GalleryManagementPage';
+import LogoutPage from 'app/modules/logout/LogoutPage';
 
 import { AUTHORITIES } from 'app/config/constants';
 
@@ -92,6 +93,7 @@ const AppRoutes = () => {
         <Route path="/home/senior-warehouseman" element={<SeniorWarehousemanHomePage />} />
         <Route path="/home/admin" element={<AdminHomePage />} />
         <Route path="/home" element={<RoleRedirect />} />
+        <Route path="/logout-info" element={<LogoutPage />} />
 
         <Route
           path="mechanic/my-orders"

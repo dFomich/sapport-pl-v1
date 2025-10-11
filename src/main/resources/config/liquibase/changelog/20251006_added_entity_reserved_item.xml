@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="20251006-01-add-reserved-item" author="wmm-app">
+        <!-- Таблица резерваций -->
+        <createTable tableName="reserved_item">
+    <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+    </column>
+
+    <column name="material_code" type="varchar(64)">
+        <constraints nullable="false"/>
+    </column>
+
+    <column name="qty" type="integer">
+        <constraints nullable="false"/>
+    </column>
+
+    <column name="reserved_by" type="varchar(64)">
+        <constraints nullable="false"/>
+    </column>
+
+    <column name="reserved_at" type="timestamp">
+        <constraints nullable="false"/>
+    </column>
+
+    <column name="expires_at" type="timestamp">
+        <constraints nullable="false"/>
+    </column>
+</createTable>
+
+
+        <!-- Уник: по одному активному холду на материал у пользователя -->
+        <addUniqueConstraint
+            tableName="reserved_item"
+            columnNames="reserved_by, material_code"
+            constraintName="uk_reserved_by_material"/>
+
+        <!-- Индекс для быстрых выборок по материалу и сроку действия -->
+        <createIndex tableName="reserved_item" indexName="idx_reserved_item_mat_exp">
+            <column name="material_code"/>
+            <column name="expires_at"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
