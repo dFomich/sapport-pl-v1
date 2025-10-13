@@ -29,7 +29,7 @@ const CartDialog: React.FC<Props> = ({ open, onClose, onAddMore }) => {
   const totalPositions = cart.positionsCount;
   const totalQty = cart.totalQty;
 
-  // 🔄 Проверка остатков из mechanic/catalog/tiles
+  //  Проверка остатков из mechanic/catalog/tiles
   useEffect(() => {
     if (!open || !items.length || !storageType) return;
 
@@ -48,7 +48,7 @@ const CartDialog: React.FC<Props> = ({ open, onClose, onAddMore }) => {
           return { ...it, availableStock: newStock };
         });
 
-        // 🔁 если что-то изменилось — обновляем корзину локально
+        // если что-то изменилось — обновляем корзину локально
         if (JSON.stringify(items.map(i => i.availableStock)) !== JSON.stringify(updatedItems.map(i => i.availableStock))) {
           cart.state.items = updatedItems;
         }
@@ -65,7 +65,7 @@ const CartDialog: React.FC<Props> = ({ open, onClose, onAddMore }) => {
           setUnavailable([]);
           setSnackbar({
             open: true,
-            message: 'Все товары снова доступны 👍',
+            message: 'Можно продолжить заказ. Убедитесь, что нет возможности заказать товар, аналогичный отсутствующему',
             severity: 'success',
           });
         }

@@ -82,6 +82,14 @@ module.exports = async options => {
             use: 'file-loader',
           },
 
+          {
+            test: /\.(ttf|woff2?)$/,
+            type: 'asset/resource',
+            generator: {
+              filename: 'content/fonts/[name][ext]',
+            },
+          },
+
           /*
        ,
        Disabled due to https://github.com/jhipster/generator-jhipster/issues/16116
