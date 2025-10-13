@@ -9,6 +9,7 @@ import BuildIcon from '@mui/icons-material/Build';
 import AnnouncementIcon from '@mui/icons-material/Announcement';
 import { useNavigate } from 'react-router-dom';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
+import StorefrontIcon from '@mui/icons-material/Storefront';
 
 import './homepages.scss';
 
@@ -20,6 +21,7 @@ const tiles = [
   { title: 'Управление плитками', icon: <BuildIcon fontSize="large" />, to: '/mechanic-tile' },
   { title: 'Управление новостями', icon: <AnnouncementIcon fontSize="large" />, to: '/news-management' },
   { title: 'Управление галереей', icon: <PhotoLibraryIcon fontSize="large" />, to: '/gallery-management' },
+  { title: 'Витрина', icon: <StorefrontIcon fontSize="large" />, to: '/warehouse/list' },
 ];
 
 const SeniorWarehousemanHomePage = () => {
@@ -62,7 +64,7 @@ const SeniorWarehousemanHomePage = () => {
               transition: 'transform 0.3s ease, box-shadow 0.3s ease',
 
               '&:hover': {
-                transform: 'translateY(-5px) scale(1.04)', // 👈 теперь работает!
+                transform: 'translateY(-5px) scale(1.04)',
                 boxShadow: '0 12px 36px rgba(0,0,0,0.4)',
               },
             }}

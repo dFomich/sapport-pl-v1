@@ -45,6 +45,9 @@ const EntitiesMenu = () => {
           <MenuItem icon="clipboard-list" to="/warehouse/orders">
             Заявки на выдачу
           </MenuItem>
+          <MenuItem icon="store" to="/warehouse/list">
+            Витрина
+          </MenuItem>
         </>
       )}
 

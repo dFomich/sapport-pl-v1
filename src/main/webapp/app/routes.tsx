@@ -33,6 +33,7 @@ import RoleRedirect from 'app/shared/auth/role-redirect';
 import NewsManagementPage from 'app/modules/homepages/NewsManagementPage';
 import GalleryManagementPage from 'app/modules/homepages/GalleryManagementPage';
 import LogoutPage from 'app/modules/logout/LogoutPage';
+import WarehouseList from 'app/modules/warehouse/warehouse-list';
 
 import { AUTHORITIES } from 'app/config/constants';
 
@@ -153,6 +154,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute hasAnyAuthorities={[AUTHORITIES.SENIOR_WAREHOUSEMAN]}>
               <WarehouseCatalog />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="warehouse/list"
+          element={
+            <PrivateRoute hasAnyAuthorities={[AUTHORITIES.SENIOR_WAREHOUSEMAN, AUTHORITIES.WAREHOUSEMAN]}>
+              <WarehouseList />
             </PrivateRoute>
           }
         />

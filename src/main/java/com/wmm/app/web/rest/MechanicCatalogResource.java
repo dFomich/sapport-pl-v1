@@ -26,9 +26,11 @@ public class MechanicCatalogResource {
         "hasAnyAuthority('" +
         AuthoritiesConstants.MECHANIC +
         "','" +
-        AuthoritiesConstants.SENIOR_WAREHOUSEMAN +
-        "','" +
         AuthoritiesConstants.SENIOR_MECHANIC +
+        "','" +
+        AuthoritiesConstants.WAREHOUSEMAN +
+        "','" +
+        AuthoritiesConstants.SENIOR_WAREHOUSEMAN +
         "','" +
         AuthoritiesConstants.MANAGER +
         "','" +
@@ -51,9 +53,11 @@ public class MechanicCatalogResource {
         "hasAnyAuthority('" +
         AuthoritiesConstants.MECHANIC +
         "','" +
-        AuthoritiesConstants.SENIOR_WAREHOUSEMAN +
-        "','" +
         AuthoritiesConstants.SENIOR_MECHANIC +
+        "','" +
+        AuthoritiesConstants.WAREHOUSEMAN +
+        "','" +
+        AuthoritiesConstants.SENIOR_WAREHOUSEMAN +
         "','" +
         AuthoritiesConstants.MANAGER +
         "','" +
