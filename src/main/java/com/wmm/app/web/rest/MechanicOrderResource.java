@@ -6,19 +6,25 @@ import com.wmm.app.domain.MechanicOrderLine;
 import com.wmm.app.repository.InventoryCurrentRepository;
 import com.wmm.app.repository.MechanicOrderRepository;
 import com.wmm.app.service.MechanicOrderService;
+import com.wmm.app.service.TelegramBotService;
 import com.wmm.app.web.rest.errors.BadRequestAlertException;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 @RestController
 @RequestMapping("/api/mechanic-orders")
 public class MechanicOrderResource {
+
+    @Autowired
+    private TelegramBotService telegramBotService;
 
     private record CheckoutItem(String materialCode, Integer qty, Long tileId, String title) {}
 
@@ -142,6 +148,20 @@ public class MechanicOrderResource {
             icOpt.ifPresent(ic -> {
                 ic.setAvailableStock(ic.getAvailableStock() - e.getValue());
                 invRepo.save(ic);
+
+                if (ic.getAvailableStock() <= 0) {
+                    String productTitle = titles.getOrDefault(ic.getMaterial(), ic.getMaterial());
+
+                    String message =
+                        """
+                        ⚠️ *Товар закончился:*
+                        ** %s
+                        • *Код:* `%s`
+                        • *Склад:* %s
+                        """.formatted(productTitle, ic.getMaterial(), req.storageType());
+
+                    telegramBotService.sendMessage("131638400", message);
+                }
             });
         }
 

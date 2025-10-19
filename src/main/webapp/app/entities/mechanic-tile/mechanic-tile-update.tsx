@@ -143,6 +143,15 @@ export const MechanicTileUpdate = () => {
                 }}
               />
               <ValidatedField
+                label="Минимальный остаток (для уведомления)"
+                id="mechanic-tile-minStockAlert"
+                name="minStockAlert"
+                data-cy="minStockAlert"
+                type="number"
+                placeholder="Например: 10"
+                min="0"
+              />
+              <ValidatedField
                 label={translate('wmmappApp.mechanicTile.active')}
                 id="mechanic-tile-active"
                 name="active"

@@ -9,7 +9,8 @@ import BuildIcon from '@mui/icons-material/Build';
 import AnnouncementIcon from '@mui/icons-material/Announcement';
 import { useNavigate } from 'react-router-dom';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
-import StorefrontIcon from '@mui/icons-material/Storefront';
+
+import LayersIcon from '@mui/icons-material/Layers';
 
 import './homepages.scss';
 
@@ -17,11 +18,12 @@ const tiles = [
   { title: 'Загрузка остатков', icon: <CloudUploadIcon fontSize="large" />, to: '/inventory/upload' },
   { title: 'Остатки склада', icon: <InventoryIcon fontSize="large" />, to: '/inventory/stock' },
   { title: 'Заявки на выдачу', icon: <AssignmentTurnedInIcon fontSize="large" />, to: '/warehouse/orders' },
-  { title: 'Витрина механика', icon: <StoreIcon fontSize="large" />, to: '/warehouse/catalog' },
+  { title: 'Витрина', icon: <StoreIcon fontSize="large" />, to: '/warehouse/catalog' },
+  { title: 'Каталог аналогов', icon: <LayersIcon fontSize="large" />, to: '/warehouse/analogs' },
+
   { title: 'Управление плитками', icon: <BuildIcon fontSize="large" />, to: '/mechanic-tile' },
   { title: 'Управление новостями', icon: <AnnouncementIcon fontSize="large" />, to: '/news-management' },
   { title: 'Управление галереей', icon: <PhotoLibraryIcon fontSize="large" />, to: '/gallery-management' },
-  { title: 'Витрина', icon: <StorefrontIcon fontSize="large" />, to: '/warehouse/list' },
 ];
 
 const SeniorWarehousemanHomePage = () => {

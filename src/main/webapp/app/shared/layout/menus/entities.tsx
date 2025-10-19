@@ -25,6 +25,7 @@ const EntitiesMenu = () => {
   const canSeeWarehouseCatalog = isAuthenticated && hasAnyAuthority(authorities, [AUTHORITIES.SENIOR_WAREHOUSEMAN]);
   const canManageNews = isAuthenticated && hasAnyAuthority(authorities, [AUTHORITIES.ADMIN, AUTHORITIES.SENIOR_WAREHOUSEMAN]);
   const canManageGallery = isAuthenticated && hasAnyAuthority(authorities, [AUTHORITIES.ADMIN, AUTHORITIES.SENIOR_WAREHOUSEMAN]);
+  const canSeeWarehouseList = isAuthenticated && hasAnyAuthority(authorities, [AUTHORITIES.WAREHOUSEMAN]);
 
   return (
     <NavDropdown
@@ -45,9 +46,6 @@ const EntitiesMenu = () => {
           <MenuItem icon="clipboard-list" to="/warehouse/orders">
             Заявки на выдачу
           </MenuItem>
-          <MenuItem icon="store" to="/warehouse/list">
-            Витрина
-          </MenuItem>
         </>
       )}
 
@@ -65,7 +63,13 @@ const EntitiesMenu = () => {
 
       {canSeeWarehouseCatalog && (
         <MenuItem icon="truck" to="/warehouse/catalog">
-          Витрина механика
+          Витрина
+        </MenuItem>
+      )}
+
+      {canSeeWarehouseList && (
+        <MenuItem icon="store" to="/warehouse/list">
+          Витрина
         </MenuItem>
       )}
 

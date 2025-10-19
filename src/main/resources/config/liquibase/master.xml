@@ -41,6 +41,8 @@
 		<include file="config/liquibase/changelog/20250907_added_mechanic_orders.xml" relativeToChangelogFile="false"/>
 		<include file="config/liquibase/changelog/20250917_added_news_item.xml" relativeToChangelogFile="false"/>
 <include file="config/liquibase/changelog/20250917_added_gallery_item.xml" relativeToChangelogFile="false"/>
+		<include file="config/liquibase/changelog/2025-02-XX_product-groups.xml" relativeToChangelogFile="false"/>
+		<include file="config/liquibase/changelog/20251018_add_min_stock_alert_to_mechanic_tile.xml" relativeToChangelogFile="false"/>
 		
 
 	<include

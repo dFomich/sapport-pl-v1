@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="
+      http://www.liquibase.org/xml/ns/dbchangelog
+      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+  <changeSet id="product-groups-01" author="you">
+    <createTable tableName="product_group">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="name" type="varchar(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="description" type="varchar(2000)"/>
+      <column name="created_by" type="varchar(255)"/>
+      <column name="created_at" type="timestamp"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="product-groups-02" author="you">
+    <createTable tableName="product_group_link">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="group_id" type="bigint">
+        <constraints nullable="false" foreignKeyName="fk_pgl_group" referencedTableName="product_group" referencedColumnNames="id"/>
+      </column>
+      <column name="material_code" type="varchar(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="added_by" type="varchar(255)"/>
+      <column name="added_at" type="timestamp"/>
+    </createTable>
+    <createIndex tableName="product_group_link" indexName="idx_pgl_group">
+      <column name="group_id"/>
+    </createIndex>
+    <createIndex tableName="product_group_link" indexName="idx_pgl_material">
+      <column name="material_code"/>
+    </createIndex>
+    <addUniqueConstraint tableName="product_group_link" columnNames="group_id, material_code" constraintName="uk_pgl_group_material"/>
+  </changeSet>
+
+</databaseChangeLog>

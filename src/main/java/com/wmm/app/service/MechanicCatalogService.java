@@ -57,13 +57,25 @@ public class MechanicCatalogService {
                     .findByStorageTypeAndMaterial(storageType, t.getMaterialCode())
                     .map(ic -> ic.getAvailableStock())
                     .orElse(0);
+
                 Set<String> cats = t
                     .getCategories()
                     .stream()
                     .map(ProductCategory::getName)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toCollection(TreeSet::new));
-                return new MechanicTileViewDTO(t.getId(), t.getTitle(), t.getComment(), t.getImageUrl(), t.getMaterialCode(), stock, cats);
+
+                // ⚠️ Добавили передачу minStockAlert
+                return new MechanicTileViewDTO(
+                    t.getId(),
+                    t.getTitle(),
+                    t.getComment(),
+                    t.getImageUrl(),
+                    t.getMaterialCode(),
+                    stock,
+                    t.getMinStockAlert(), // ← вот это новое поле
+                    cats
+                );
             })
             .collect(Collectors.toList());
 

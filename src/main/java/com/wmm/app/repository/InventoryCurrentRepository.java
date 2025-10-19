@@ -28,4 +28,11 @@ public interface InventoryCurrentRepository extends JpaRepository<InventoryCurre
 
     @Query("select distinct ic.storageType from InventoryCurrent ic order by ic.storageType asc")
     List<String> findDistinctStorageTypes();
+
+    // Получить все записи по одному коду материала (по всем складам)
+    List<InventoryCurrent> findByMaterial(String material);
+
+    // Получить все записи по нескольким кодам (по всем складам)
+    @Query("select ic from InventoryCurrent ic where ic.material in :materials")
+    List<InventoryCurrent> findByMaterialIn(java.util.Collection<String> materials);
 }

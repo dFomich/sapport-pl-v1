@@ -10,6 +10,7 @@ public class MechanicTileViewDTO {
     public String imageUrl;
     public String materialCode;
     public int availableStock; // по выбранному складу
+    public int minStockAlert; // ⚠️ Минимальный остаток для уведомления
     public Set<String> categories;
 
     public MechanicTileViewDTO(
@@ -19,6 +20,7 @@ public class MechanicTileViewDTO {
         String imageUrl,
         String materialCode,
         Integer availableStock,
+        Integer minStockAlert,
         Set<String> categories
     ) {
         this.id = id;
@@ -27,6 +29,7 @@ public class MechanicTileViewDTO {
         this.imageUrl = imageUrl;
         this.materialCode = materialCode;
         this.availableStock = availableStock == null ? 0 : availableStock;
+        this.minStockAlert = minStockAlert == null ? 0 : minStockAlert;
         this.categories = categories;
     }
 }

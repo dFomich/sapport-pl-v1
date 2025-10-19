@@ -102,7 +102,7 @@
 			<version>5.2.5</version>
 		</dependency>
 		
-		<!-- pom.xml -->
+		
 <dependency>
   <groupId>com.google.zxing</groupId>
   <artifactId>core</artifactId>
@@ -114,7 +114,11 @@
   <version>3.5.2</version>
 </dependency>
 
-
+<dependency>
+    <groupId>org.telegram</groupId>
+    <artifactId>telegrambots-spring-boot-starter</artifactId>
+    <version>6.9.7.1</version>
+</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>

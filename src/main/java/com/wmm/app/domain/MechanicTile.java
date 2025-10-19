@@ -48,6 +48,9 @@ public class MechanicTile implements Serializable {
     @Column(name = "active", nullable = false)
     private Boolean active;
 
+    @Column(name = "min_stock_alert")
+    private Integer minStockAlert = 0; // Минимальный остаток для уведомления
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "rel_mechanic_tile__categories",
@@ -69,6 +72,19 @@ public class MechanicTile implements Serializable {
     private Set<Warehouse> warehouses = new HashSet<>();
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
+
+    public Integer getMinStockAlert() {
+        return minStockAlert;
+    }
+
+    public MechanicTile minStockAlert(Integer minStockAlert) {
+        this.setMinStockAlert(minStockAlert);
+        return this;
+    }
+
+    public void setMinStockAlert(Integer minStockAlert) {
+        this.minStockAlert = minStockAlert;
+    }
 
     public Long getId() {
         return this.id;

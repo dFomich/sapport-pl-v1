@@ -6,6 +6,7 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import { useNavigate } from 'react-router-dom';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import { Typography, Box } from '@mui/material';
+import LayersIcon from '@mui/icons-material/Layers';
 
 import './homepages.scss';
 
@@ -14,6 +15,7 @@ const tiles = [
   { title: 'Остатки склада', icon: <InventoryIcon fontSize="large" />, to: '/inventory/stock' },
   { title: 'Заявки на выдачу', icon: <AssignmentTurnedInIcon fontSize="large" />, to: '/warehouse/orders' },
   { title: 'Витрина', icon: <StorefrontIcon fontSize="large" />, to: '/warehouse/list' },
+  { title: 'Каталог аналогов', icon: <LayersIcon fontSize="large" />, to: '/warehouse/analogs' },
 ];
 
 const WarehousemanHomePage = () => {

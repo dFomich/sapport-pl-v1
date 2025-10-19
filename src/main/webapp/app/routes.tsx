@@ -34,6 +34,7 @@ import NewsManagementPage from 'app/modules/homepages/NewsManagementPage';
 import GalleryManagementPage from 'app/modules/homepages/GalleryManagementPage';
 import LogoutPage from 'app/modules/logout/LogoutPage';
 import WarehouseList from 'app/modules/warehouse/warehouse-list';
+import WarehouseAnalogs from 'app/modules/warehouse/warehouse-analogs';
 
 import { AUTHORITIES } from 'app/config/constants';
 
@@ -162,6 +163,15 @@ const AppRoutes = () => {
           element={
             <PrivateRoute hasAnyAuthorities={[AUTHORITIES.SENIOR_WAREHOUSEMAN, AUTHORITIES.WAREHOUSEMAN]}>
               <WarehouseList />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="warehouse/analogs"
+          element={
+            <PrivateRoute hasAnyAuthorities={[AUTHORITIES.WAREHOUSEMAN, AUTHORITIES.SENIOR_WAREHOUSEMAN]}>
+              <WarehouseAnalogs />
             </PrivateRoute>
           }
         />
