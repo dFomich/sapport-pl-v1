@@ -32,9 +32,8 @@ services:
           name: sapport-pl-db-new
           property: password
       
-      # Собираем JDBC URL из компонентов
+      # JDBC URL собираем вручную
       - key: SPRING_DATASOURCE_URL
-        generateValue: true
         value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase: 
@@ -48,5 +47,5 @@ services:
 databases:
   - name: sapport-pl-db-new
     plan: free
-    databaseName: sapport-pl
+    databaseName: sapport_pl
     user: fomich
