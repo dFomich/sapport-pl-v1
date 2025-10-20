@@ -92,8 +92,9 @@ management:
 
 telegram:
   bot:
-    username: CLD_WH_bot
     token: 8405097009:AAGeXquVuKWQMTivsZbXJdHMLvVbO0kHlF4
+    username: 'CLD_WH_bot' # без @, например "sapport_bot"
+  chat-id: '131638400'
 
 spring:
   application:

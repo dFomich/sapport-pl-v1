@@ -24,10 +24,12 @@ management:
     metrics:
       export:
         enabled: false
+
 telegram:
   bot:
-    username: CLD_WH_bot
-    token: 8405097009:AAGeXquVuKWQMTivsZbXJdHMLvVbO0kHlF4
+    token: ${TELEGRAM_BOT_TOKEN:}
+    username: 'CLD_WH_bot'
+  chat-id: ${TELEGRAM_CHAT_ID:}
 
 spring:
   devtools:
