@@ -25,7 +25,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
     @Autowired
     private InventoryCurrentRepository inventoryCurrentRepository;
 
-    private static final String DEFAULT_CHAT_ID = "-1003139822839";
+    private static final String DEFAULT_CHAT_ID = "131638400";
     private final String username;
     private final String token;
 
