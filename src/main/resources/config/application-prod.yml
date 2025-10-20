@@ -24,6 +24,10 @@ management:
     metrics:
       export:
         enabled: false
+telegram:
+  bot:
+    username: CLD_WH_bot
+    token: 8405097009:AAGeXquVuKWQMTivsZbXJdHMLvVbO0kHlF4
 
 spring:
   devtools:
