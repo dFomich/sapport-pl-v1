@@ -9,43 +9,24 @@ services:
         value: prod
       - key: JHIPSTER_SLEEP
         value: "10"
+      - key: SERVER_ADDRESS
+        value: "0.0.0.0"
+      - key: SERVER_PORT
+        value: "8080"
       
-      # Подключение БД Render
-      - key: DB_HOST
-        fromDatabase: 
-          name: sapport-pl-db-new
-          property: host
-      - key: DB_PORT
-        fromDatabase: 
-          name: sapport-pl-db-new
-          property: port
-      - key: DB_NAME
-        fromDatabase: 
-          name: sapport-pl-db-new
-          property: database
-      - key: DB_USER
-        fromDatabase: 
-          name: sapport-pl-db-new
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase: 
-          name: sapport-pl-db-new
-          property: password
-      
-      # JDBC URL собираем вручную
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+        fromDatabase: 
+          name: sapportpl-db
+          property: connectionString
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase: 
-          name: sapport-pl-db-new
+          name: sapportpl-db
           property: user
       - key: SPRING_DATASOURCE_PASSWORD
         fromDatabase: 
-          name: sapport-pl-db-new
+          name: sapportpl-db
           property: password
 
 databases:
-  - name: sapport-pl-db-new
+  - name: sapportpl-db
     plan: free
-    databaseName: sapport_pl
-    user: fomich
