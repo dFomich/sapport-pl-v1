@@ -65,4 +65,6 @@ public interface MechanicTileRepository extends MechanicTileRepositoryWithBagRel
         nativeQuery = true
     )
     List<String> findCategoryNamesForWarehouse(@Param("storageType") String storageType);
+
+    Optional<MechanicTile> findByMaterialCodeAndActiveTrue(String materialCode);
 }

@@ -91,4 +91,15 @@ public class ProductGroupResource {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    // Обновить название и описание группы
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('" + AuthoritiesConstants.SENIOR_WAREHOUSEMAN + "')")
+    public ResponseEntity<Void> updateGroup(@PathVariable Long id, @RequestBody Map<String, String> req) {
+        String name = req.getOrDefault("name", "").trim();
+        String description = req.getOrDefault("description", "").trim();
+
+        service.update(id, name, description);
+        return ResponseEntity.noContent().build();
+    }
 }

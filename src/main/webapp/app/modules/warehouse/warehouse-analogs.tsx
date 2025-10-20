@@ -4,6 +4,7 @@ import { Button, Col, Modal, ModalBody, ModalHeader, Row, Spinner, Table, Input,
 import { hasAnyAuthority } from 'app/shared/auth/private-route';
 import { AUTHORITIES } from 'app/config/constants';
 import { useAppSelector } from 'app/config/store';
+import AnimatedBackground from 'app/shared/components/AnimatedBackground';
 import '../mechanic/mechanic-catalog.scss';
 
 type GroupItem = {
@@ -80,6 +81,47 @@ const WarehouseAnalogs: React.FC = () => {
     }
   };
 
+  // === Редактирование группы (название + описание) ===
+  const [isEditingGroup, setIsEditingGroup] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+
+  const startEditingGroup = () => {
+    if (!selected) return;
+    setEditName(selected.name);
+    setEditDesc(selected.description || '');
+    setIsEditingGroup(true);
+  };
+
+  const saveGroupChanges = async () => {
+    if (!selected) return;
+    try {
+      await axios.put(`/api/product-groups/${selected.id}`, {
+        name: editName.trim(),
+        description: editDesc.trim(),
+      });
+      setIsEditingGroup(false);
+      await openDetails(selected.id);
+      await loadGroups();
+    } catch (e) {
+      console.error('Ошибка при сохранении группы', e);
+      alert('Ошибка при сохранении изменений');
+    }
+  };
+
+  // === Удаление всей группы ===
+  const deleteGroup = async (id: number) => {
+    if (!window.confirm('Удалить всю группу аналогов?')) return;
+    try {
+      await axios.delete(`/api/product-groups/${id}`);
+      setSelected(null);
+      await loadGroups();
+    } catch (e) {
+      console.error('Ошибка удаления группы', e);
+      alert('Ошибка при удалении группы');
+    }
+  };
+
   // === Добавить код ===
   const addCode = async (groupId: number) => {
     if (!newCode.trim()) return;
@@ -126,326 +168,380 @@ const WarehouseAnalogs: React.FC = () => {
   };
 
   return (
-    <div className="container mt-4 mechanic-catalog">
-      <Row className="align-items-center mb-4">
-        <Col>
-          <h3 style={{ fontWeight: 700, color: '#212529', marginBottom: '4px' }}>Каталог аналогов</h3>
-          <p style={{ fontSize: '0.95rem', color: '#6c757d', marginBottom: 0 }}>Просмотр и редактирование групп взаимозаменяемых товаров</p>
-        </Col>
-        <Col md="4">
-          <Input
-            placeholder="🔍 Поиск по названию группы"
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            style={{
-              borderRadius: '8px',
-              borderColor: '#dee2e6',
-              paddingLeft: '12px',
-            }}
-          />
-        </Col>
-        {isSeniorWarehouseman && (
-          <Col md="auto">
-            <Button className="modern-btn add-btn" onClick={() => setCreating(true)}>
-              <span className="icon">➕</span> Новая группа
-            </Button>
+    <>
+      <AnimatedBackground />
+      <div className="container mt-4 mechanic-catalog" style={{ position: 'relative', zIndex: 1 }}>
+        <Row className="align-items-center mb-4">
+          <Col>
+            <h3 style={{ fontWeight: 700, color: '#212529', marginBottom: '4px' }}>Каталог аналогов</h3>
+            <p style={{ fontSize: '0.95rem', color: '#6c757d', marginBottom: 0 }}>
+              Просмотр и редактирование групп взаимозаменяемых товаров
+            </p>
           </Col>
-        )}
-      </Row>
+          <Col md="4">
+            <Input
+              placeholder="🔍 Поиск по названию группы"
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              style={{
+                borderRadius: '8px',
+                borderColor: '#dee2e6',
+                paddingLeft: '12px',
+              }}
+            />
+          </Col>
+          {isSeniorWarehouseman && (
+            <Col md="auto">
+              <Button className="modern-btn add-btn" onClick={() => setCreating(true)}>
+                <span className="icon">➕</span> Новая группа
+              </Button>
+            </Col>
+          )}
+        </Row>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', paddingTop: '60px', paddingBottom: '60px' }}>
-          <Spinner color="primary" style={{ width: '40px', height: '40px' }} />
-        </div>
-      ) : (
-        <Table bordered hover responsive style={{ borderRadius: '8px', overflow: 'hidden' }}>
-          <thead style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-            <tr>
-              <th style={{ fontWeight: 700, color: '#495057', padding: '14px 12px' }}>Название группы</th>
-              <th style={{ fontWeight: 700, color: '#495057', padding: '14px 12px' }}>Описание</th>
-              <th style={{ fontWeight: 700, color: '#495057', padding: '14px 12px', textAlign: 'center' }}>Кодов</th>
-              <th style={{ fontWeight: 700, color: '#495057', padding: '14px 12px', textAlign: 'center' }}>Всего на складах</th>
-              <th style={{ fontWeight: 700, color: '#495057', padding: '14px 12px', textAlign: 'center', width: 140 }}>Действие</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && (
+        {loading ? (
+          <div style={{ textAlign: 'center', paddingTop: '60px', paddingBottom: '60px' }}>
+            <Spinner color="primary" style={{ width: '40px', height: '40px' }} />
+          </div>
+        ) : (
+          <Table bordered hover responsive style={{ borderRadius: '8px', overflow: 'hidden' }}>
+            <thead style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', color: '#adb5bd', padding: '40px 12px' }}>
-                  Группы не найдены
-                </td>
+                <th style={{ fontWeight: 700, color: '#495057', padding: '14px 12px' }}>Название группы</th>
+                <th style={{ fontWeight: 700, color: '#495057', padding: '14px 12px' }}>Описание</th>
+                <th style={{ fontWeight: 700, color: '#495057', padding: '14px 12px', textAlign: 'center' }}>Кодов</th>
+                <th style={{ fontWeight: 700, color: '#495057', padding: '14px 12px', textAlign: 'center' }}>Всего на складах</th>
+                <th style={{ fontWeight: 700, color: '#495057', padding: '14px 12px', textAlign: 'center', width: 140 }}>Действие</th>
               </tr>
-            )}
-            {filtered.map(g => (
-              <tr
-                key={g.id}
-                style={{
-                  backgroundColor: '#fff',
-                  borderBottom: '1px solid #dee2e6',
-                  transition: 'background-color 0.15s ease',
-                  cursor: 'default',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.backgroundColor = '#f8faff';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.backgroundColor = '#fff';
-                }}
-              >
-                <td style={{ padding: '14px 12px', fontWeight: 500, color: '#212529' }}>{g.name}</td>
-                <td style={{ padding: '14px 12px', color: '#6c757d' }}>{g.description || '-'}</td>
-                <td style={{ padding: '14px 12px', textAlign: 'center', color: '#495057', fontWeight: 500 }}>{g.codesCount}</td>
-                <td style={{ padding: '14px 12px', textAlign: 'center', color: '#495057', fontWeight: 500 }}>{g.totalStock}</td>
-                <td style={{ padding: '14px 12px', textAlign: 'center' }}>
-                  <Button className="modern-btn view-btn" size="sm" onClick={() => openDetails(g.id)}>
-                    <span className="icon">🔍</span> Просмотр
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      )}
-
-      {/* 🟩 Детали группы */}
-      <Modal isOpen={!!selected} toggle={() => setSelected(null)} size="lg" centered>
-        <ModalHeader
-          toggle={() => setSelected(null)}
-          style={{
-            borderBottom: '2px solid #f0f0f0',
-            paddingBottom: '16px',
-            fontSize: '1.25rem',
-            fontWeight: 700,
-            color: '#212529',
-          }}
-        >
-          {selected?.name}
-        </ModalHeader>
-        <ModalBody style={{ paddingTop: '24px', paddingBottom: '24px' }}>
-          {selected && (
-            <>
-              <div
-                style={{
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  marginBottom: '20px',
-                  color: '#212529',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <span style={{ fontSize: '1.2rem' }}>📦</span>
-                Всего на складах: <span style={{ color: '#0d6efd', fontSize: '1.1rem' }}>{selected.totalStock}</span>
-              </div>
-
-              {isSeniorWarehouseman && (
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '10px',
-                    marginBottom: '24px',
-                    padding: '14px',
-                    backgroundColor: '#f8f9fa',
-                    borderRadius: '8px',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Input
-                    placeholder="Введите код материала..."
-                    value={newCode}
-                    onChange={e => setNewCode(e.target.value)}
-                    style={{
-                      borderRadius: '6px',
-                      borderColor: '#dee2e6',
-                      flex: 1,
-                    }}
-                  />
-                  <Button className="modern-btn add-btn" onClick={() => addCode(selected.id)} disabled={!newCode.trim()}>
-                    <span className="icon">➕</span> Добавить
-                  </Button>
-                </div>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', color: '#adb5bd', padding: '40px 12px' }}>
+                    Группы не найдены
+                  </td>
+                </tr>
               )}
-
-              {selected.codes.map(code => (
-                <div
-                  key={code.materialCode}
+              {filtered.map(g => (
+                <tr
+                  key={g.id}
                   style={{
-                    marginBottom: '18px',
-                    padding: '16px',
-                    borderRadius: '8px',
-                    backgroundColor: '#f8f9fa',
-                    border: '1px solid #dee2e6',
-                    transition: 'all 0.2s ease-in-out',
+                    backgroundColor: '#fff',
+                    borderBottom: '1px solid #dee2e6',
+                    transition: 'background-color 0.15s ease',
+                    cursor: 'default',
                   }}
                   onMouseEnter={e => {
-                    e.currentTarget.style.backgroundColor = '#eef6ff';
-                    e.currentTarget.style.borderColor = '#b8daff';
+                    e.currentTarget.style.backgroundColor = '#f8faff';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.backgroundColor = '#f8f9fa';
-                    e.currentTarget.style.borderColor = '#dee2e6';
+                    e.currentTarget.style.backgroundColor = '#fff';
                   }}
                 >
+                  <td style={{ padding: '14px 12px', fontWeight: 500, color: '#212529' }}>{g.name}</td>
+                  <td style={{ padding: '14px 12px', color: '#6c757d' }}>{g.description || '-'}</td>
+                  <td style={{ padding: '14px 12px', textAlign: 'center', color: '#495057', fontWeight: 500 }}>{g.codesCount}</td>
+                  <td style={{ padding: '14px 12px', textAlign: 'center', color: '#495057', fontWeight: 500 }}>{g.totalStock}</td>
+                  <td style={{ padding: '14px 12px', textAlign: 'center' }}>
+                    <Button className="modern-btn view-btn" size="sm" onClick={() => openDetails(g.id)}>
+                      <span className="icon">🔍</span> Просмотр
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+
+        {/* 🟩 Детали группы */}
+        <Modal isOpen={!!selected} toggle={() => setSelected(null)} size="lg" centered>
+          <ModalHeader
+            toggle={() => setSelected(null)}
+            style={{
+              borderBottom: '2px solid #f0f0f0',
+              paddingBottom: '16px',
+              fontSize: '1.25rem',
+              fontWeight: 700,
+              color: '#212529',
+            }}
+          >
+            {selected?.name}
+          </ModalHeader>
+          <ModalBody style={{ paddingTop: '24px', paddingBottom: '24px' }}>
+            {selected && (
+              <>
+                <div
+                  style={{
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    marginBottom: '20px',
+                    color: '#212529',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <span style={{ fontSize: '1.2rem' }}>📦</span>
+                  Всего на складах: <span style={{ color: '#0d6efd', fontSize: '1.1rem' }}>{selected.totalStock}</span>
+                </div>
+
+                {isSeniorWarehouseman && (
                   <div
                     style={{
                       display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      marginBottom: '14px',
+                      justifyContent: 'flex-end',
+                      gap: '10px',
+                      marginBottom: '20px',
                       flexWrap: 'wrap',
-                      gap: '8px',
                     }}
                   >
-                    <div style={{ flex: 1, minWidth: '200px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 600, color: '#495057' }}>Код:</span>
-                        <span style={{ fontWeight: 700, color: '#0d6efd', fontSize: '1rem' }}>{code.materialCode}</span>
-                        <span style={{ color: '#6c757d', fontSize: '0.9rem' }}>•</span>
-                        <span style={{ color: '#212529', fontWeight: 600 }}>Остаток: {code.totalStock}</span>
+                    <Button
+                      className="modern-btn view-btn"
+                      style={{ background: '#ffc107', color: '#000', border: 'none' }}
+                      onClick={() => {
+                        setEditName(selected.name);
+                        setEditDesc(selected.description || '');
+                        setIsEditingGroup(true);
+                      }}
+                    >
+                      ✏️ Редактировать
+                    </Button>
+                    <Button className="modern-btn remove-btn" onClick={() => deleteGroup(selected.id)} style={{ background: '#dc3545' }}>
+                      🗑 Удалить группу
+                    </Button>
+                  </div>
+                )}
+
+                {isSeniorWarehouseman && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '10px',
+                      marginBottom: '24px',
+                      padding: '14px',
+                      backgroundColor: '#f8f9fa',
+                      borderRadius: '8px',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Input
+                      placeholder="Введите код материала..."
+                      value={newCode}
+                      onChange={e => setNewCode(e.target.value)}
+                      style={{
+                        borderRadius: '6px',
+                        borderColor: '#dee2e6',
+                        flex: 1,
+                      }}
+                    />
+                    <Button className="modern-btn add-btn" onClick={() => addCode(selected.id)} disabled={!newCode.trim()}>
+                      <span className="icon">➕</span> Добавить
+                    </Button>
+                  </div>
+                )}
+
+                {selected.codes.map(code => (
+                  <div
+                    key={code.materialCode}
+                    style={{
+                      marginBottom: '18px',
+                      padding: '16px',
+                      borderRadius: '8px',
+                      backgroundColor: '#f8f9fa',
+                      border: '1px solid #dee2e6',
+                      transition: 'all 0.2s ease-in-out',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.backgroundColor = '#eef6ff';
+                      e.currentTarget.style.borderColor = '#b8daff';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.backgroundColor = '#f8f9fa';
+                      e.currentTarget.style.borderColor = '#dee2e6';
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '14px',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 600, color: '#495057' }}>Код:</span>
+                          <span style={{ fontWeight: 700, color: '#0d6efd', fontSize: '1rem' }}>{code.materialCode}</span>
+                          <span style={{ color: '#6c757d', fontSize: '0.9rem' }}>•</span>
+                          <span style={{ color: '#212529', fontWeight: 600 }}>Остаток: {code.totalStock}</span>
+                        </div>
+                        {code.title && (
+                          <div style={{ marginTop: '6px', color: '#6c757d', fontStyle: 'italic', fontSize: '0.9rem' }}>{code.title}</div>
+                        )}
                       </div>
-                      {code.title && (
-                        <div style={{ marginTop: '6px', color: '#6c757d', fontStyle: 'italic', fontSize: '0.9rem' }}>{code.title}</div>
+                      {isSeniorWarehouseman && (
+                        <Button
+                          size="sm"
+                          className="modern-btn remove-btn"
+                          onClick={() => removeCode(selected.id, code.materialCode)}
+                          style={{ minWidth: '36px', padding: '6px' }}
+                        >
+                          ✕
+                        </Button>
                       )}
                     </div>
-                    {isSeniorWarehouseman && (
+
+                    <Table bordered size="sm" style={{ marginBottom: 0, marginTop: '12px' }}>
+                      <thead style={{ backgroundColor: '#f0f0f0' }}>
+                        <tr>
+                          <th style={{ fontWeight: 600, color: '#495057', padding: '10px 12px', fontSize: '0.9rem' }}>Склад</th>
+                          <th style={{ fontWeight: 600, color: '#495057', padding: '10px 12px', fontSize: '0.9rem' }}>Остаток</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {code.perStorage.map(s => (
+                          <tr key={s.storageType} style={{ backgroundColor: '#fff' }}>
+                            <td style={{ padding: '10px 12px', color: '#212529', fontSize: '0.9rem' }}>{s.storageType}</td>
+                            <td style={{ padding: '10px 12px', color: '#212529', fontSize: '0.9rem', fontWeight: 500 }}>
+                              {s.availableStock}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
+                ))}
+              </>
+            )}
+          </ModalBody>
+        </Modal>
+
+        {/* 🟧 Модалка редактирования группы */}
+        <Modal isOpen={isEditingGroup} toggle={() => setIsEditingGroup(false)} centered>
+          <ModalHeader toggle={() => setIsEditingGroup(false)}>Редактирование группы</ModalHeader>
+          <ModalBody>
+            <FormGroup>
+              <Label style={{ fontWeight: 600 }}>Название группы</Label>
+              <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Введите новое название" />
+            </FormGroup>
+
+            <FormGroup>
+              <Label style={{ fontWeight: 600 }}>Описание</Label>
+              <Input type="textarea" rows={3} value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Введите описание" />
+            </FormGroup>
+
+            <div style={{ textAlign: 'right', marginTop: '16px' }}>
+              <Button className="modern-btn add-btn" onClick={saveGroupChanges} disabled={!editName.trim()}>
+                💾 Сохранить
+              </Button>
+            </div>
+          </ModalBody>
+        </Modal>
+
+        {/* 🟨 Создание новой группы */}
+        <Modal isOpen={creating} toggle={() => setCreating(false)} centered>
+          <ModalHeader
+            toggle={() => setCreating(false)}
+            style={{
+              borderBottom: '2px solid #f0f0f0',
+              paddingBottom: '16px',
+              fontSize: '1.1rem',
+              fontWeight: 700,
+              color: '#212529',
+            }}
+          >
+            Новая группа аналогов
+          </ModalHeader>
+          <ModalBody style={{ paddingTop: '24px', paddingBottom: '24px' }}>
+            <FormGroup style={{ marginBottom: '18px' }}>
+              <Label style={{ fontWeight: 600, marginBottom: '8px', color: '#212529' }}>Название</Label>
+              <Input
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                placeholder="Введите название группы"
+                style={{ borderRadius: '6px', borderColor: '#dee2e6' }}
+              />
+            </FormGroup>
+
+            <FormGroup style={{ marginBottom: '18px' }}>
+              <Label style={{ fontWeight: 600, marginBottom: '8px', color: '#212529' }}>Описание</Label>
+              <Input
+                value={newDesc}
+                onChange={e => setNewDesc(e.target.value)}
+                placeholder="Описание (необязательно)"
+                style={{ borderRadius: '6px', borderColor: '#dee2e6' }}
+              />
+            </FormGroup>
+
+            <FormGroup style={{ marginBottom: '18px' }}>
+              <Label style={{ fontWeight: 600, marginBottom: '10px', color: '#212529' }}>Коды материалов</Label>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                <Input
+                  placeholder="Введите код"
+                  value={newCode}
+                  onChange={e => setNewCode(e.target.value)}
+                  style={{ borderRadius: '6px', borderColor: '#dee2e6', flex: 1 }}
+                />
+                <Button color="primary" onClick={addTempCode} className="modern-btn add-btn" style={{ minWidth: '44px' }}>
+                  ➕
+                </Button>
+              </div>
+
+              {newCodes.length > 0 && (
+                <div
+                  style={{
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '6px',
+                    padding: '10px',
+                    border: '1px solid #dee2e6',
+                  }}
+                >
+                  {newCodes.map(code => (
+                    <div
+                      key={code}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        paddingBottom: '8px',
+                        marginBottom: '8px',
+                        borderBottom: '1px solid #e9ecef',
+                      }}
+                    >
+                      <span style={{ color: '#212529', fontWeight: 500 }}>{code}</span>
                       <Button
+                        color="link"
                         size="sm"
-                        className="modern-btn remove-btn"
-                        onClick={() => removeCode(selected.id, code.materialCode)}
-                        style={{ minWidth: '36px', padding: '6px' }}
+                        onClick={() => removeTempCode(code)}
+                        style={{
+                          padding: '2px 6px',
+                          color: '#dc3545',
+                          textDecoration: 'none',
+                          transition: 'transform 0.15s ease',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.2)')}
+                        onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
                       >
                         ✕
                       </Button>
-                    )}
-                  </div>
-
-                  <Table bordered size="sm" style={{ marginBottom: 0, marginTop: '12px' }}>
-                    <thead style={{ backgroundColor: '#f0f0f0' }}>
-                      <tr>
-                        <th style={{ fontWeight: 600, color: '#495057', padding: '10px 12px', fontSize: '0.9rem' }}>Склад</th>
-                        <th style={{ fontWeight: 600, color: '#495057', padding: '10px 12px', fontSize: '0.9rem' }}>Остаток</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {code.perStorage.map(s => (
-                        <tr key={s.storageType} style={{ backgroundColor: '#fff' }}>
-                          <td style={{ padding: '10px 12px', color: '#212529', fontSize: '0.9rem' }}>{s.storageType}</td>
-                          <td style={{ padding: '10px 12px', color: '#212529', fontSize: '0.9rem', fontWeight: 500 }}>
-                            {s.availableStock}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </>
-          )}
-        </ModalBody>
-      </Modal>
+              )}
+            </FormGroup>
 
-      {/* 🟨 Создание новой группы */}
-      <Modal isOpen={creating} toggle={() => setCreating(false)} centered>
-        <ModalHeader
-          toggle={() => setCreating(false)}
-          style={{
-            borderBottom: '2px solid #f0f0f0',
-            paddingBottom: '16px',
-            fontSize: '1.1rem',
-            fontWeight: 700,
-            color: '#212529',
-          }}
-        >
-          Новая группа аналогов
-        </ModalHeader>
-        <ModalBody style={{ paddingTop: '24px', paddingBottom: '24px' }}>
-          <FormGroup style={{ marginBottom: '18px' }}>
-            <Label style={{ fontWeight: 600, marginBottom: '8px', color: '#212529' }}>Название</Label>
-            <Input
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              placeholder="Введите название группы"
-              style={{ borderRadius: '6px', borderColor: '#dee2e6' }}
-            />
-          </FormGroup>
-
-          <FormGroup style={{ marginBottom: '18px' }}>
-            <Label style={{ fontWeight: 600, marginBottom: '8px', color: '#212529' }}>Описание</Label>
-            <Input
-              value={newDesc}
-              onChange={e => setNewDesc(e.target.value)}
-              placeholder="Описание (необязательно)"
-              style={{ borderRadius: '6px', borderColor: '#dee2e6' }}
-            />
-          </FormGroup>
-
-          <FormGroup style={{ marginBottom: '18px' }}>
-            <Label style={{ fontWeight: 600, marginBottom: '10px', color: '#212529' }}>Коды материалов</Label>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
-              <Input
-                placeholder="Введите код"
-                value={newCode}
-                onChange={e => setNewCode(e.target.value)}
-                style={{ borderRadius: '6px', borderColor: '#dee2e6', flex: 1 }}
-              />
-              <Button color="primary" onClick={addTempCode} className="modern-btn add-btn" style={{ minWidth: '44px' }}>
-                ➕
+            <div style={{ textAlign: 'right', marginTop: '24px' }}>
+              <Button className="modern-btn add-btn" onClick={createGroup} disabled={!newName.trim()}>
+                ✅ Создать группу
               </Button>
             </div>
-
-            {newCodes.length > 0 && (
-              <div
-                style={{
-                  backgroundColor: '#f8f9fa',
-                  borderRadius: '6px',
-                  padding: '10px',
-                  border: '1px solid #dee2e6',
-                }}
-              >
-                {newCodes.map(code => (
-                  <div
-                    key={code}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingBottom: '8px',
-                      marginBottom: '8px',
-                      borderBottom: '1px solid #e9ecef',
-                    }}
-                  >
-                    <span style={{ color: '#212529', fontWeight: 500 }}>{code}</span>
-                    <Button
-                      color="link"
-                      size="sm"
-                      onClick={() => removeTempCode(code)}
-                      style={{
-                        padding: '2px 6px',
-                        color: '#dc3545',
-                        textDecoration: 'none',
-                        transition: 'transform 0.15s ease',
-                        cursor: 'pointer',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.2)')}
-                      onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
-                    >
-                      ✕
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </FormGroup>
-
-          <div style={{ textAlign: 'right', marginTop: '24px' }}>
-            <Button className="modern-btn add-btn" onClick={createGroup} disabled={!newName.trim()}>
-              ✅ Создать группу
-            </Button>
-          </div>
-        </ModalBody>
-      </Modal>
-    </div>
+          </ModalBody>
+        </Modal>
+      </div>
+    </>
   );
 };
 

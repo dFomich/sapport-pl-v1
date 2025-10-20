@@ -34,7 +34,7 @@ const AnimatedBackground: React.FC = () => {
     resize();
     window.addEventListener('resize', resize);
 
-    // Инициализация фигур
+    // Ð˜Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ñ„Ð¸Ð³ÑƒÑ€
     if (shapesRef.current.length === 0) {
       for (let i = 0; i < 18; i++) {
         shapesRef.current.push({
@@ -51,17 +51,17 @@ const AnimatedBackground: React.FC = () => {
       }
     }
 
-    // Функция отрисовки фигуры
+    // Ð¤ÑƒÐ½ÐºÑ†Ð¸Ñ Ð¾Ñ‚Ñ€Ð¸ÑÐ¾Ð²ÐºÐ¸ Ñ„Ð¸Ð³ÑƒÑ€Ñ‹
     const drawShape = (shape: Shape) => {
       ctx.save();
       ctx.translate(shape.x, shape.y);
       ctx.rotate(shape.rotation);
 
-      // Простое свечение через двойную обводку
+      // ÐŸÑ€Ð¾ÑÑ‚Ð¾Ðµ ÑÐ²ÐµÑ‡ÐµÐ½Ð¸Ðµ Ñ‡ÐµÑ€ÐµÐ· Ð´Ð²Ð¾Ð¹Ð½ÑƒÑŽ Ð¾Ð±Ð²Ð¾Ð´ÐºÑƒ
       ctx.strokeStyle = `rgba(100, 180, 255, ${shape.opacity * 0.3})`;
       ctx.lineWidth = 6;
 
-      // Внешний контур (свечение)
+      // Ð’Ð½ÐµÑˆÐ½Ð¸Ð¹ ÐºÐ¾Ð½Ñ‚ÑƒÑ€ (ÑÐ²ÐµÑ‡ÐµÐ½Ð¸Ðµ)
       switch (shape.type) {
         case 0:
           ctx.beginPath();
@@ -88,25 +88,25 @@ const AnimatedBackground: React.FC = () => {
           break;
       }
 
-      // Основной контур
+      // ÐžÑÐ½Ð¾Ð²Ð½Ð¾Ð¹ ÐºÐ¾Ð½Ñ‚ÑƒÑ€
       ctx.strokeStyle = `rgba(30, 144, 255, ${shape.opacity})`;
       ctx.lineWidth = 3;
       ctx.fillStyle = `rgba(120, 190, 255, ${shape.opacity * 0.3})`;
 
       switch (shape.type) {
-        case 0: // Круг
+        case 0: // ÐšÑ€ÑƒÐ³
           ctx.beginPath();
           ctx.arc(0, 0, shape.size / 2, 0, Math.PI * 2);
           ctx.stroke();
           ctx.fill();
           break;
-        case 1: // Квадрат
+        case 1: // ÐšÐ²Ð°Ð´Ñ€Ð°Ñ‚
           ctx.beginPath();
           ctx.rect(-shape.size / 2, -shape.size / 2, shape.size, shape.size);
           ctx.stroke();
           ctx.fill();
           break;
-        case 2: // Треугольник
+        case 2: // Ð¢Ñ€ÐµÑƒÐ³Ð¾Ð»ÑŒÐ½Ð¸Ðº
           ctx.beginPath();
           ctx.moveTo(0, -shape.size / 2);
           ctx.lineTo(shape.size / 2, shape.size / 2);
@@ -116,7 +116,7 @@ const AnimatedBackground: React.FC = () => {
           ctx.fill();
           break;
         default:
-          // Круг по умолчанию
+          // ÐšÑ€ÑƒÐ³ Ð¿Ð¾ ÑƒÐ¼Ð¾Ð»Ñ‡Ð°Ð½Ð¸ÑŽ
           ctx.beginPath();
           ctx.arc(0, 0, shape.size / 2, 0, Math.PI * 2);
           ctx.stroke();
@@ -127,7 +127,7 @@ const AnimatedBackground: React.FC = () => {
       ctx.restore();
     };
 
-    // Функция отрисовки линий между близкими фигурами
+    // Ð¤ÑƒÐ½ÐºÑ†Ð¸Ñ Ð¾Ñ‚Ñ€Ð¸ÑÐ¾Ð²ÐºÐ¸ Ð»Ð¸Ð½Ð¸Ð¹ Ð¼ÐµÐ¶Ð´Ñƒ Ð±Ð»Ð¸Ð·ÐºÐ¸Ð¼Ð¸ Ñ„Ð¸Ð³ÑƒÑ€Ð°Ð¼Ð¸
     const drawConnections = () => {
       const shapes = shapesRef.current;
       for (let i = 0; i < shapes.length; i++) {
@@ -148,20 +148,20 @@ const AnimatedBackground: React.FC = () => {
       }
     };
 
-    // Анимация
+    // ÐÐ½Ð¸Ð¼Ð°Ñ†Ð¸Ñ
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Рисуем линии
+      // Ð Ð¸ÑÑƒÐµÐ¼ Ð»Ð¸Ð½Ð¸Ð¸
       drawConnections();
 
-      // Обновляем и рисуем фигуры
+      // ÐžÐ±Ð½Ð¾Ð²Ð»ÑÐµÐ¼ Ð¸ Ñ€Ð¸ÑÑƒÐµÐ¼ Ñ„Ð¸Ð³ÑƒÑ€Ñ‹
       shapesRef.current.forEach(shape => {
         shape.x += shape.speedX;
         shape.y += shape.speedY;
         shape.rotation += shape.rotationSpeed;
 
-        // Границы экрана
+        // Ð“Ñ€Ð°Ð½Ð¸Ñ†Ñ‹ ÑÐºÑ€Ð°Ð½Ð°
         if (shape.x < -shape.size) shape.x = canvas.width + shape.size;
         if (shape.x > canvas.width + shape.size) shape.x = -shape.size;
         if (shape.y < -shape.size) shape.y = canvas.height + shape.size;
@@ -175,7 +175,7 @@ const AnimatedBackground: React.FC = () => {
 
     animate();
 
-    // Интерактивность с мышью
+    // Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ð¾ÑÑ‚ÑŒ Ñ Ð¼Ñ‹ÑˆÑŒÑŽ
     const handleMouseMove = (e: MouseEvent) => {
       const mouseX = e.clientX;
       const mouseY = e.clientY;

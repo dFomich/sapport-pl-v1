@@ -5,6 +5,7 @@ import com.wmm.app.domain.MechanicOrder;
 import com.wmm.app.domain.MechanicOrderLine;
 import com.wmm.app.repository.InventoryCurrentRepository;
 import com.wmm.app.repository.MechanicOrderRepository;
+import com.wmm.app.repository.MechanicTileRepository;
 import com.wmm.app.service.MechanicOrderService;
 import com.wmm.app.service.TelegramBotService;
 import com.wmm.app.web.rest.errors.BadRequestAlertException;
@@ -44,15 +45,18 @@ public class MechanicOrderResource {
     private final InventoryCurrentRepository invRepo;
     private final MechanicOrderRepository orderRepo;
     private final MechanicOrderService mechanicOrderService;
+    private final MechanicTileRepository tileRepo;
 
     public MechanicOrderResource(
         InventoryCurrentRepository invRepo,
         MechanicOrderRepository orderRepo,
-        MechanicOrderService mechanicOrderService
+        MechanicOrderService mechanicOrderService,
+        MechanicTileRepository tileRepo
     ) {
         this.invRepo = invRepo;
         this.orderRepo = orderRepo;
         this.mechanicOrderService = mechanicOrderService;
+        this.tileRepo = tileRepo;
     }
 
     private String currentLogin() {
@@ -149,18 +153,22 @@ public class MechanicOrderResource {
                 ic.setAvailableStock(ic.getAvailableStock() - e.getValue());
                 invRepo.save(ic);
 
+                String productTitle = titles.getOrDefault(ic.getMaterial(), ic.getMaterial());
+
+                // 🔴 если товар закончился
                 if (ic.getAvailableStock() <= 0) {
-                    String productTitle = titles.getOrDefault(ic.getMaterial(), ic.getMaterial());
-
-                    String message =
-                        """
-                        ⚠️ *Товар закончился:*
-                        ** %s
-                        • *Код:* `%s`
-                        • *Склад:* %s
-                        """.formatted(productTitle, ic.getMaterial(), req.storageType());
-
-                    telegramBotService.sendMessage("131638400", message);
+                    telegramBotService.notifyOutOfStock(ic, productTitle, req.storageType());
+                }
+                // 🟡 если достигнут минимум, но товар ещё есть
+                else {
+                    tileRepo
+                        .findByMaterialCodeAndActiveTrue(ic.getMaterial())
+                        .ifPresent(tile -> {
+                            int minAlert = Optional.ofNullable(tile.getMinStockAlert()).orElse(0);
+                            if (minAlert > 0 && ic.getAvailableStock() <= minAlert) {
+                                telegramBotService.notifyLowStock(ic, productTitle, minAlert);
+                            }
+                        });
                 }
             });
         }

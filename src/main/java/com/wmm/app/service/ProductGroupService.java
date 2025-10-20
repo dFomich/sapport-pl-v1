@@ -40,6 +40,17 @@ public class ProductGroupService {
         groupRepo.deleteById(id);
     }
 
+    @Transactional
+    public void update(Long id, String name, String description) {
+        groupRepo
+            .findById(id)
+            .ifPresent(g -> {
+                g.setName(name);
+                g.setDescription(description);
+                groupRepo.save(g);
+            });
+    }
+
     public List<GroupListItem> list() {
         List<ProductGroup> groups = groupRepo.findAll();
 
