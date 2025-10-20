@@ -1,37 +1,52 @@
 services:
   - type: web
     name: sapport-pl
-    env: docker        # ⬅️ теперь Docker
+    env: docker        
     plan: free
-    # Dockerfile в корне — build/start команды не нужны
+    
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: JHIPSTER_SLEEP
         value: "10"
-
+      
       # Подключение БД Render
       - key: DB_HOST
-        fromDatabase: { name: sapport-pl-db, property: host }
+        fromDatabase: 
+          name: sapport-pl-db-new
+          property: host
       - key: DB_PORT
-        fromDatabase: { name: sapport-pl-db, property: port }
+        fromDatabase: 
+          name: sapport-pl-db-new
+          property: port
       - key: DB_NAME
-        fromDatabase: { name: sapport-pl-db, property: database }
+        fromDatabase: 
+          name: sapport-pl-db-new
+          property: database
       - key: DB_USER
-        fromDatabase: { name: sapport-pl-db, property: user }
+        fromDatabase: 
+          name: sapport-pl-db-new
+          property: user
       - key: DB_PASSWORD
-        fromDatabase: { name: sapport-pl-db, property: password }
-
+        fromDatabase: 
+          name: sapport-pl-db-new
+          property: password
+      
       # Собираем JDBC URL из компонентов
       - key: SPRING_DATASOURCE_URL
+        generateValue: true
         value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
       - key: SPRING_DATASOURCE_USERNAME
-        value: ${DB_USER}
+        fromDatabase: 
+          name: sapport-pl-db-new
+          property: user
       - key: SPRING_DATASOURCE_PASSWORD
-        value: ${DB_PASSWORD}
+        fromDatabase: 
+          name: sapport-pl-db-new
+          property: password
 
 databases:
-  - name: sapport-pl-db
+  - name: sapport-pl-db-new
     plan: free
-    databaseName: wmmapp
-    user: wmmapp
+    databaseName: sapport-pl
+    user: fomich
