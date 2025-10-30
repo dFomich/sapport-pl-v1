@@ -25,10 +25,22 @@ public class MechanicOrder implements Serializable {
     @Column(name = "completed")
     private boolean completed = false;
 
+    @Column(name = "cancelled")
+    private boolean cancelled = false;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<MechanicOrderLine> lines = new ArrayList<>();
 
     // Геттеры и сеттеры
+
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    public void setCancelled(boolean cancelled) {
+        this.cancelled = cancelled;
+    }
+
     public String getOrderId() {
         return orderId;
     }

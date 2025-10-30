@@ -45,7 +45,8 @@ public class TelegramBotService {
         }
     }
 
-    public void notifyOutOfStock(InventoryCurrent ic, String productTitle, String storageType) {
+    // 🔴 Уведомление о полном отсутствии товара
+    public void notifyOutOfStock(String materialCode, String productTitle, String storageType) {
         String message =
             """
             🔴 *Товар закончился*
@@ -53,12 +54,13 @@ public class TelegramBotService {
             🏷️ *Название:* %s
             📝 *Код:* `%s`
             🏢 *Склад:* %s
-            """.formatted(productTitle, ic.getMaterial(), storageType);
+            """.formatted(productTitle, materialCode, storageType);
 
-        sendMessageWithAnalogButton(defaultChatId, message, ic.getMaterial());
+        sendMessageWithAnalogButton(defaultChatId, message, materialCode);
     }
 
-    public void notifyLowStock(InventoryCurrent ic, String productTitle, int minThreshold) {
+    // 🟡 Уведомление о низком остатке
+    public void notifyLowStock(String materialCode, String productTitle, int visibleStock, int minThreshold, String storageType) {
         String message =
             """
             🟡 *НИЗКИЙ ОСТАТОК ТОВАРА*
@@ -66,11 +68,14 @@ public class TelegramBotService {
             🏷️ *Название:* %s
             📝 *Код:* `%s`
             📦 *Остаток:* %d ед.
-            """.formatted(productTitle, ic.getMaterial(), ic.getAvailableStock(), minThreshold);
+            ⚠️ *Минимум:* %d ед.
+            🏢 *Склад:* %s
+            """.formatted(productTitle, materialCode, visibleStock, minThreshold, storageType);
 
-        sendMessageWithAnalogButton(defaultChatId, message, ic.getMaterial());
+        sendMessageWithAnalogButton(defaultChatId, message, materialCode);
     }
 
+    // 🔍 Обработка кнопки "Показать аналоги"
     public void handleAnalogRequest(String materialCode, String chatId) {
         Optional<ProductGroupLink> linkOpt = productGroupLinkRepository.findByMaterialCode(materialCode);
         if (linkOpt.isEmpty()) {
@@ -81,48 +86,62 @@ public class TelegramBotService {
         ProductGroup group = linkOpt.get().getGroup();
         String groupName = Optional.ofNullable(group.getName()).orElse("Без названия");
 
-        List<ProductGroupLink> allLinks = productGroupLinkRepository.findByGroupId(group.getId());
-        List<String> codes = allLinks.stream().map(ProductGroupLink::getMaterialCode).toList();
+        // все материалы в группе, кроме исходного
+        List<ProductGroupLink> links = productGroupLinkRepository.findByGroupId(group.getId());
+        List<String> codes = links.stream().map(ProductGroupLink::getMaterialCode).filter(code -> !code.equals(materialCode)).toList();
 
         if (codes.isEmpty()) {
-            sendMessage(chatId, "ℹ️ В группе *" + groupName + "* пока нет кодов.");
+            sendMessage(chatId, "ℹ️ В группе *" + groupName + "* нет других кодов.");
             return;
         }
 
-        List<InventoryCurrent> stockItems = inventoryCurrentRepository.findByMaterialIn(codes);
+        // остатки из InventoryCurrent
+        List<InventoryCurrent> items = inventoryCurrentRepository.findByMaterialIn(codes);
 
         Map<String, Map<String, Integer>> stockMap = new HashMap<>();
-        for (InventoryCurrent ic : stockItems) {
-            if (ic.getAvailableStock() <= 0) continue;
-            stockMap
-                .computeIfAbsent(ic.getMaterial(), k -> new HashMap<>())
-                .merge(ic.getStorageType(), ic.getAvailableStock(), Integer::sum);
+        Map<String, String> titles = new HashMap<>();
+
+        for (InventoryCurrent ic : items) {
+            Integer qty = ic.getAvailableStock();
+            if (qty == null || qty <= 0) continue;
+
+            stockMap.computeIfAbsent(ic.getMaterial(), k -> new HashMap<>()).merge(ic.getStorageType(), qty, Integer::sum);
+
+            if (!titles.containsKey(ic.getMaterial()) && ic.getMaterialDescription() != null) titles.put(
+                ic.getMaterial(),
+                ic.getMaterialDescription()
+            );
         }
 
         StringBuilder msg = new StringBuilder();
-        msg.append("🔍 *АНАЛОГИ*\n\n");
-        msg.append("📝 *Поиск по коду:* `").append(materialCode).append("`\n");
-        msg.append("🔗 *Группа:* ").append(groupName).append("\n\n");
+        msg
+            .append("🔍 *АНАЛОГИ ТОВАРА*\n\n")
+            .append("🧾 Код: `")
+            .append(materialCode)
+            .append("`\n")
+            .append("📦 Группа: *")
+            .append(groupName)
+            .append("*\n\n");
 
-        int codesWithStock = 0;
+        int shown = 0;
         for (String code : codes) {
             Map<String, Integer> perStorage = stockMap.get(code);
             if (perStorage == null || perStorage.isEmpty()) continue;
+            shown++;
 
-            codesWithStock++;
-            msg.append("✅ `").append(code).append("`\n");
-            for (Map.Entry<String, Integer> e : perStorage.entrySet()) {
-                msg.append("   • ").append(e.getKey()).append(" — *").append(e.getValue()).append("* ед.\n");
-            }
+            String title = titles.getOrDefault(code, "");
+            msg.append("✅ `").append(code).append("`");
+            if (!title.isBlank()) msg.append(" — ").append(title);
+            msg.append("\n");
+            perStorage.forEach((st, q) -> msg.append("   • ").append(st).append(" — *").append(q).append("* ед.\n"));
         }
 
-        if (codesWithStock == 0) {
-            msg.append("❌ В группе нет товаров в наличии");
-        }
+        if (shown == 0) msg.append("❌ В группе нет товаров с доступным остатком.");
 
         sendMessage(chatId, msg.toString());
     }
 
+    // 📘 Отправка сообщения с кнопкой "Показать аналоги"
     public void sendMessageWithAnalogButton(String chatId, String text, String materialCode) {
         if (sender == null) {
             System.out.println("Telegram sender not configured, skipping message with button: " + text);
@@ -147,6 +166,7 @@ public class TelegramBotService {
         }
     }
 
+    // 💬 Отправка простого текстового сообщения
     public void sendMessage(String chatId, String text) {
         if (sender == null) {
             System.out.println("Telegram sender not configured, skipping message: " + text);

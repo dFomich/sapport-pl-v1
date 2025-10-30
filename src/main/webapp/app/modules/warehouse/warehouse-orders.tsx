@@ -9,12 +9,14 @@ import autoTable from 'jspdf-autotable';
 import QRCode from 'qrcode';
 import 'react-datepicker/dist/react-datepicker.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import '../../shared/pdf/dejavuFont';
+import 'app/shared/pdf/dejavuFont';
 
 type OrderLine = {
   materialCode: string;
   title: string;
   qty: number;
+  originalQty?: number;
+  removed?: boolean;
 };
 
 type Order = {
@@ -24,6 +26,7 @@ type Order = {
   createdAt: string;
   storageType: string;
   completed: boolean;
+  cancelled?: boolean;
   lines: OrderLine[];
 };
 
@@ -37,10 +40,43 @@ const WarehouseOrders = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeTab, setActiveTab] = useState<'active' | 'archive'>('active');
+  const [editMode, setEditMode] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshProgress, setRefreshProgress] = useState(0);
   const itemsPerPage = 25;
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    fetchOrders();
+
+    // Автоматическое обновление каждые 30 секунд
+    const refreshInterval = setInterval(() => {
+      fetchOrders();
+    }, 30000);
+
+    // Прогресс-бар для визуализации времени до следующего обновления
+    const progressInterval = setInterval(() => {
+      setRefreshProgress(prev => {
+        const newProgress = prev + 100 / 300; // 30 секунд = 300 интервалов по 100мс
+        if (newProgress >= 100) {
+          return 0; // Сброс после достижения 100%
+        }
+        return newProgress;
+      });
+    }, 100);
+
+    return () => {
+      clearInterval(refreshInterval);
+      clearInterval(progressInterval);
+    };
+  }, []);
+
+  const fetchOrders = () => {
+    if (isRefreshing) return; // Предотвращаем повторные запросы
+
+    setIsRefreshing(true);
+    setRefreshProgress(0);
+
     axios
       .get<Order[]>('/api/mechanic-orders/warehouse/orders')
       .then(res => {
@@ -48,8 +84,13 @@ const WarehouseOrders = () => {
         setOrders(sorted);
       })
       .catch(err => console.error('Ошибка при загрузке заказов:', err))
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => {
+        setLoading(false);
+        setTimeout(() => {
+          setIsRefreshing(false);
+        }, 500); // Небольшая задержка для плавности
+      });
+  };
 
   useEffect(() => {
     let filtered = [...orders];
@@ -103,7 +144,7 @@ const WarehouseOrders = () => {
       doc.rect(0, y, pageWidth, 1, 'F');
     }
 
-    // === ЛОГОТИП (справа) ===
+    // === ЛОГОТИП (слева) ===
     try {
       const logo = new Image();
       logo.src = 'content/images/logo-sapport.png';
@@ -111,7 +152,7 @@ const WarehouseOrders = () => {
         logo.onload = () => resolve();
         logo.onerror = () => resolve();
       });
-      const logoX = pageWidth - logoWidth - marginRight;
+      const logoX = marginLeft;
       const logoY = 25;
       doc.addImage(logo, 'PNG', logoX, logoY, logoWidth, logoHeight, '', 'FAST');
     } catch {
@@ -164,10 +205,10 @@ const WarehouseOrders = () => {
         1: { halign: 'center', cellWidth: 100 },
         2: { cellWidth: 260 },
         3: { halign: 'center', cellWidth: 60 },
-        4: { halign: 'center', cellWidth: 80 }, // 👈 уменьшено, чтобы QR не упирался в край
+        4: { halign: 'center', cellWidth: 80 },
       },
-      margin: { left: marginLeft, right: marginRight }, // 👈 фикс: равные поля
-      tableWidth: pageWidth - marginLeft - marginRight, // 👈 обязательная коррекция ширины
+      margin: { left: marginLeft, right: marginRight },
+      tableWidth: pageWidth - marginLeft - marginRight,
       didDrawCell(data) {
         if (data.cell.section === 'body' && data.column.index === 4) {
           const src = rows[data.row.index]?.[4]?.image;
@@ -189,18 +230,6 @@ const WarehouseOrders = () => {
     doc.save(`SAPPort_order_${order.orderId}.pdf`);
   };
 
-  const markOrderAsCompleted = async (orderId: string) => {
-    try {
-      await axios.put(`/api/mechanic-orders/${orderId}/complete`);
-      alert('Заявка отмечена как завершённая');
-      setOrders(prev => prev.map(o => (o.orderId === orderId ? { ...o, completed: true } : o)));
-      setSelectedOrder(null);
-    } catch (e) {
-      alert('Не удалось отметить заявку как завершённую.');
-    }
-  };
-
-  // Быстрая печать через iframe
   const handleQuickPrint = (order: Order) => {
     const iframe = document.createElement('iframe');
     iframe.style.position = 'absolute';
@@ -269,8 +298,458 @@ const WarehouseOrders = () => {
     setTimeout(() => document.body.removeChild(iframe), 1000);
   };
 
+  const markOrderAsCompleted = async (orderId: string) => {
+    try {
+      await axios.put(`/api/mechanic-orders/${orderId}/complete`);
+      setOrders(prev => prev.map(o => (o.orderId === orderId ? { ...o, completed: true } : o)));
+      setSelectedOrder(null);
+    } catch (e) {
+      alert('Не удалось отметить заявку как завершённую.');
+    }
+  };
+
+  const saveEditedOrder = async () => {
+    if (!selectedOrder) return;
+    try {
+      await axios.put(`/api/mechanic-orders/${selectedOrder.orderId}/lines`, selectedOrder.lines);
+      setOrders(prev => prev.map(o => (o.orderId === selectedOrder.orderId ? selectedOrder : o)));
+      setEditMode(false);
+    } catch (e) {
+      alert('Ошибка при сохранении изменений');
+    }
+  };
+
+  const deleteEntireOrder = async () => {
+    if (!selectedOrder) return;
+    if (!window.confirm('Удалить всю заявку?')) return;
+    try {
+      await axios.put(`/api/mechanic-orders/${selectedOrder.orderId}/cancel`);
+      setOrders(prev => prev.map(o => (o.orderId === selectedOrder.orderId ? { ...o, completed: true, cancelled: true } : o)));
+      setSelectedOrder(null);
+    } catch {
+      alert('Ошибка при удалении заявки');
+    }
+  };
+
   return (
     <div className="container mt-4">
+      <style>{`
+        .modern-modal .modal-content {
+          border-radius: 8px;
+          border: none;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+          background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+        }
+        
+        .modern-modal .modal-header {
+          background: linear-gradient(135deg, #3d4f66 0%, #2d3e50 100%);
+          color: white;
+          border: none;
+          padding: 1.25rem 1.5rem;
+          border-bottom: 1px solid #4a5568;
+        }
+        
+        .modern-modal .modal-title {
+          font-weight: 600;
+          font-size: 1.25rem;
+        }
+        
+        .modern-modal .btn-close {
+          filter: brightness(0) invert(1);
+          opacity: 0.7;
+        }
+        
+        .modern-modal .btn-close:hover {
+          opacity: 1;
+        }
+        
+        .modern-modal .modal-body {
+          padding: 1.5rem;
+          background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+        }
+        
+        .modern-modal .modal-footer {
+          border: none !important;
+          padding: 1rem 1.5rem !important;
+          background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%) !important;
+          border-top: 1px solid #4a5568 !important;
+          display: flex !important;
+          justify-content: space-between !important;
+          align-items: center !important;
+          flex-direction: row !important;
+        }
+        
+        .modal-footer-left {
+          display: flex !important;
+          gap: 0.5rem !important;
+          align-items: center !important;
+          flex-shrink: 0 !important;
+        }
+        
+        .modal-footer-right {
+          display: flex !important;
+          gap: 0.5rem !important;
+          align-items: center !important;
+          margin-left: auto !important;
+        }
+        
+        .info-card {
+          background: linear-gradient(135deg, #374151 0%, #2d3748 100%);
+          border-radius: 6px;
+          padding: 1rem;
+          margin-bottom: 1rem;
+          color: #e5e7eb;
+          border: 1px solid #4a5568;
+        }
+        
+        .info-card strong {
+          color: #60a5fa;
+          font-weight: 600;
+        }
+        
+        .info-card p {
+          margin-bottom: 0.5rem;
+        }
+        
+        .info-card p:last-child {
+          margin-bottom: 0;
+        }
+        
+        .modern-table {
+          background: linear-gradient(135deg, #374151 0%, #2d3748 100%);
+          border-radius: 6px;
+          overflow: hidden;
+          border: 1px solid #4a5568;
+        }
+        
+        .modern-table thead {
+          background: linear-gradient(135deg, #3d4f66 0%, #2d3e50 100%);
+          color: white;
+        }
+        
+        .modern-table thead th {
+          border: none;
+          padding: 0.875rem 1rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          font-size: 0.75rem;
+          letter-spacing: 0.5px;
+        }
+        
+        .modern-table tbody tr {
+          transition: background-color 0.15s ease;
+          color: #e5e7eb;
+        }
+        
+        .modern-table tbody tr:hover {
+          background: #3d4f66;
+        }
+        
+        .modern-table tbody td {
+          padding: 0.875rem 1rem;
+          vertical-align: middle;
+          border-bottom: 1px solid #4a5568;
+        }
+        
+        .modern-table tbody tr:last-child td {
+          border-bottom: none;
+        }
+        
+        .btn-system {
+          border-radius: 6px;
+          padding: 0.5rem 1rem;
+          font-weight: 500;
+          border: none;
+          transition: all 0.2s ease;
+          font-size: 0.875rem;
+        }
+        
+        .btn-system:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-system:active {
+          transform: translateY(0);
+        }
+        
+        .btn-icon {
+          width: 40px !important;
+          height: 40px !important;
+          min-width: 40px !important;
+          border-radius: 6px !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          border: none !important;
+          transition: all 0.2s ease !important;
+          font-size: 1.25rem !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          position: relative !important;
+          cursor: pointer !important;
+        }
+        
+        .btn-icon:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        .btn-icon:active {
+          transform: translateY(0) !important;
+        }
+        
+        .btn-icon::after {
+          content: attr(data-tooltip) !important;
+          position: absolute !important;
+          bottom: 110% !important;
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+          background: rgba(0, 0, 0, 0.9) !important;
+          color: white !important;
+          padding: 0.375rem 0.75rem !important;
+          border-radius: 4px !important;
+          font-size: 0.75rem !important;
+          white-space: nowrap !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+          transition: opacity 0.2s ease !important;
+          z-index: 9999 !important;
+        }
+        
+        .btn-icon:hover::after {
+          opacity: 1 !important;
+        }
+        
+        .btn-print {
+          background: #6b7280;
+          color: white;
+        }
+        
+        .btn-print:hover {
+          background: #4b5563;
+        }
+        
+        .btn-pdf {
+          background: #3b82f6;
+          color: white;
+        }
+        
+        .btn-pdf:hover {
+          background: #2563eb;
+        }
+        
+        .btn-edit {
+          background: #6b7280;
+          color: white;
+        }
+        
+        .btn-edit:hover {
+          background: #4b5563;
+        }
+        
+        .btn-complete {
+          background: #10b981;
+          color: white;
+        }
+        
+        .btn-complete:hover {
+          background: #059669;
+        }
+        
+        .btn-save {
+          background: #10b981;
+          color: white;
+        }
+        
+        .btn-save:hover {
+          background: #059669;
+        }
+        
+        .btn-cancel-edit {
+          background: #6b7280;
+          color: white;
+        }
+        
+        .btn-cancel-edit:hover {
+          background: #4b5563;
+        }
+        
+        .btn-delete {
+          background: #ef4444;
+          color: white;
+        }
+        
+        .btn-delete:hover {
+          background: #dc2626;
+        }
+        
+        .btn-remove-line {
+          background: #ef4444;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          padding: 0.25rem 0.75rem;
+          font-size: 0.8rem;
+          transition: all 0.2s ease;
+          font-weight: 500;
+        }
+        
+        .btn-remove-line:hover {
+          background: #dc2626;
+          transform: scale(1.05);
+        }
+        
+        .deleted-row {
+          background: #7f1d1d !important;
+          opacity: 0.7;
+        }
+        
+        .deleted-row td {
+          text-decoration: line-through;
+          color: #fca5a5 !important;
+        }
+        
+        .qty-input {
+          border-radius: 4px;
+          border: 1px solid #4a5568;
+          padding: 0.375rem 0.5rem;
+          transition: border-color 0.2s ease;
+          background: #1f2937;
+          color: #e5e7eb;
+          font-size: 0.875rem;
+        }
+        
+        .qty-input:focus {
+          border-color: #3b82f6;
+          outline: none;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        
+        .refresh-btn {
+          position: fixed !important;
+          bottom: 2rem;
+          right: 2rem;
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          color: white;
+          border: none;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.75rem;
+          z-index: 1000;
+        }
+        
+        .refresh-btn::after {
+          content: '';
+          position: absolute;
+          top: -6px;
+          left: -6px;
+          width: calc(100% + 12px);
+          height: calc(100% + 12px);
+          border-radius: 50%;
+          border: 3px solid transparent;
+          transition: all 0.1s linear;
+        }
+        
+        .refresh-btn:not(.refreshing)::after {
+          border-top-color: #60a5fa;
+          border-right-color: #60a5fa;
+          transform: rotate(calc(var(--progress, 0) * 3.6deg));
+        }
+        
+        .refresh-btn:hover {
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          transform: translateY(-2px) scale(1.05);
+          box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+        }
+        
+        .refresh-btn:active {
+          transform: translateY(0) scale(1);
+        }
+        
+        .refresh-btn.refreshing::after {
+          animation: spin 1s linear infinite;
+        }
+        
+        .refresh-btn.near-refresh {
+          animation: pulse-intense 0.5s ease-in-out infinite;
+        }
+        
+        .refresh-btn.near-refresh::after {
+          border-top-color: #fbbf24;
+          border-right-color: #fbbf24;
+          border-bottom-color: #fbbf24;
+          border-left-color: #fbbf24;
+        }
+        
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
+        @keyframes pulse {
+          0%, 100% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.05);
+          }
+        }
+        
+        @keyframes pulse-intense {
+          0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+          }
+          25% {
+            transform: scale(1.08);
+            box-shadow: 0 6px 18px rgba(251, 191, 36, 0.5);
+          }
+          50% {
+            transform: scale(1.12);
+            box-shadow: 0 8px 24px rgba(251, 191, 36, 0.7);
+          }
+          75% {
+            transform: scale(1.08);
+            box-shadow: 0 6px 18px rgba(251, 191, 36, 0.5);
+          }
+        }
+        
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
+        @keyframes modalFadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        
+        .modern-modal .modal-content {
+          animation: modalFadeIn 0.2s ease;
+        }
+      `}</style>
+
       <h3>Заявки на выдачу</h3>
 
       <div className="btn-group mb-3">
@@ -295,7 +774,7 @@ const WarehouseOrders = () => {
         />
         <DatePicker
           selected={selectedDate}
-          onChange={(date: Date | null) => setSelectedDate(date)}
+          onChange={setSelectedDate}
           className="form-control w-auto"
           placeholderText="Фильтр по дате"
           dateFormat="dd.MM.yyyy"
@@ -318,8 +797,8 @@ const WarehouseOrders = () => {
                   {format(new Date(order.createdAt), 'dd.MM.yyyy HH:mm')}
                 </div>
                 <div className="d-flex align-items-center gap-2">
-                  <span className={`badge ${order.completed ? 'bg-success' : 'bg-warning'}`}>
-                    {order.completed ? 'Завершено' : 'В процессе'}
+                  <span className={`badge ${order.cancelled ? 'bg-danger' : order.completed ? 'bg-success' : 'bg-warning'}`}>
+                    {order.cancelled ? 'Удалена' : order.completed ? 'Завершено' : 'В процессе'}
                   </span>
                   <button className="btn btn-outline-primary btn-sm" onClick={() => setSelectedOrder(order)}>
                     Детали
@@ -328,54 +807,99 @@ const WarehouseOrders = () => {
               </div>
             </div>
           ))}
-
-          <div className="mt-3">
-            <button className="btn btn-sm btn-outline-secondary" onClick={() => setSortAsc(sortAsc === null ? true : !sortAsc)}>
-              Сортировка по дате {sortAsc === null ? '' : sortAsc ? '▲' : '▼'}
-            </button>
-          </div>
-
-          <div className="mt-3 d-flex justify-content-center gap-2">
-            {Array.from({ length: totalPages }, (_, i) => (
-              <button
-                key={i + 1}
-                className={`btn btn-sm ${currentPage === i + 1 ? 'btn-primary' : 'btn-outline-primary'}`}
-                onClick={() => setCurrentPage(i + 1)}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
         </>
       )}
 
-      <Modal show={!!selectedOrder} onHide={() => setSelectedOrder(null)} size="lg" centered>
+      <Modal
+        show={!!selectedOrder}
+        onHide={() => {
+          setSelectedOrder(null);
+          setEditMode(false);
+        }}
+        size="lg"
+        centered
+        className="modern-modal"
+      >
         <Modal.Header closeButton>
           <Modal.Title>Заявка #{selectedOrder?.orderId}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {selectedOrder && (
-            <div ref={printRef}>
-              <p>
-                <strong>Дата:</strong> {format(new Date(selectedOrder.createdAt), 'dd.MM.yyyy HH:mm')} <br />
-                <strong>Механик:</strong> {selectedOrder.mechanicLogin}
-              </p>
-              <table className="table table-bordered table-sm">
+            <div>
+              <div className="info-card">
+                <p>
+                  <strong>Дата:</strong> {format(new Date(selectedOrder.createdAt), 'dd.MM.yyyy HH:mm')}
+                </p>
+                <p>
+                  <strong>Механик:</strong> {selectedOrder.mechanicLogin}
+                </p>
+              </div>
+              <table className="table modern-table mb-0">
                 <thead>
                   <tr>
-                    <th>#</th>
+                    <th style={{ width: '50px' }}>#</th>
                     <th>Код</th>
                     <th>Название</th>
-                    <th>Кол-во</th>
+                    <th style={{ width: '100px' }}>Кол-во</th>
+                    {editMode && <th style={{ width: '100px' }}>Действие</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {selectedOrder.lines.map((line, i) => (
-                    <tr key={i}>
+                    <tr key={i} className={line.qty === 0 ? 'deleted-row' : ''}>
                       <td>{i + 1}</td>
                       <td>{line.materialCode}</td>
                       <td>{line.title}</td>
-                      <td>{line.qty}</td>
+                      <td>
+                        {editMode && line.qty > 0 ? (
+                          <input
+                            type="number"
+                            className="form-control form-control-sm qty-input"
+                            value={line.qty}
+                            min={1}
+                            max={line.originalQty || line.qty}
+                            onChange={e => {
+                              const maxQty = line.originalQty || line.qty;
+                              const newQty = Math.max(1, Math.min(maxQty, Number(e.target.value)));
+                              setSelectedOrder(prev =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      lines: prev.lines.map((l, j) => (j === i ? { ...l, qty: newQty, originalQty: maxQty } : l)),
+                                    }
+                                  : null,
+                              );
+                            }}
+                          />
+                        ) : line.qty === 0 && line.originalQty !== undefined ? (
+                          <s>{line.originalQty}</s>
+                        ) : (
+                          line.qty
+                        )}
+                      </td>
+
+                      {editMode && (
+                        <td>
+                          {line.qty > 0 && (
+                            <button
+                              className="btn-remove-line"
+                              title="Удалить позицию"
+                              onClick={() => {
+                                setSelectedOrder(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        lines: prev.lines.map((l, j) => (j === i ? { ...l, originalQty: l.qty, qty: 0 } : l)),
+                                      }
+                                    : null,
+                                );
+                              }}
+                            >
+                              Удалить
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -386,21 +910,53 @@ const WarehouseOrders = () => {
         <Modal.Footer>
           {selectedOrder && (
             <>
-              <Button variant="outline-secondary" onClick={() => handleQuickPrint(selectedOrder)}>
-                🖨️ Печать
-              </Button>
-              <Button variant="outline-primary" onClick={() => handleDownloadPdf(selectedOrder.orderId)}>
-                📄 PDF
-              </Button>
-              {!selectedOrder.completed && (
-                <Button variant="success" onClick={() => markOrderAsCompleted(selectedOrder.orderId)}>
-                  Заявка выдана
-                </Button>
-              )}
+              <div className="modal-footer-left">
+                <button className="btn-icon btn-print" onClick={() => handleQuickPrint(selectedOrder)} data-tooltip="Печать">
+                  🖨️
+                </button>
+                <button className="btn-icon btn-pdf" onClick={() => handleDownloadPdf(selectedOrder.orderId)} data-tooltip="Скачать PDF">
+                  📄
+                </button>
+              </div>
+              <div className="modal-footer-right">
+                {!editMode && !selectedOrder.completed && (
+                  <>
+                    <button className="btn-system btn-edit" onClick={() => setEditMode(true)}>
+                      Редактировать
+                    </button>
+                    <button className="btn-system btn-complete" onClick={() => markOrderAsCompleted(selectedOrder.orderId)}>
+                      Заявка выдана
+                    </button>
+                  </>
+                )}
+                {editMode && (
+                  <>
+                    <button className="btn-system btn-cancel-edit" onClick={() => setEditMode(false)}>
+                      Отменить редактирование
+                    </button>
+                    <button className="btn-system btn-save" onClick={saveEditedOrder}>
+                      Сохранить
+                    </button>
+                    <button className="btn-system btn-delete" onClick={deleteEntireOrder}>
+                      Удалить заявку
+                    </button>
+                  </>
+                )}
+              </div>
             </>
           )}
         </Modal.Footer>
       </Modal>
+
+      <button
+        className={`refresh-btn ${isRefreshing ? 'refreshing' : ''} ${refreshProgress > 80 ? 'near-refresh' : ''}`}
+        onClick={() => fetchOrders()}
+        title={`Обновить данные (автообновление каждые 30 сек)\nПрогресс: ${Math.round(refreshProgress)}%`}
+        disabled={isRefreshing}
+        style={{ '--progress': refreshProgress } as React.CSSProperties}
+      >
+        ↻
+      </button>
     </div>
   );
 };

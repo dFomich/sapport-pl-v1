@@ -41,15 +41,18 @@ public class InventoryImportService {
     private final InventoryUploadRepository uploadRepo;
     private final InventoryRowRepository rowRepo;
     private final InventoryCurrentRepository currentRepo;
+    private final InventoryVisiblePerStorageService visiblePerStorageService;
 
     public InventoryImportService(
         InventoryUploadRepository uploadRepo,
         InventoryRowRepository rowRepo,
-        InventoryCurrentRepository currentRepo
+        InventoryCurrentRepository currentRepo,
+        InventoryVisiblePerStorageService visiblePerStorageService
     ) {
         this.uploadRepo = uploadRepo;
         this.rowRepo = rowRepo;
         this.currentRepo = currentRepo;
+        this.visiblePerStorageService = visiblePerStorageService;
     }
 
     @Transactional
@@ -139,6 +142,7 @@ public class InventoryImportService {
                     );
                     currentRepo.save(ec);
                     updated++;
+                    visiblePerStorageService.recalculate(st, mat);
                 }
             } else {
                 InventoryCurrent nc = new InventoryCurrent();
@@ -157,6 +161,7 @@ public class InventoryImportService {
                 nc.setUpdatedAt(Instant.now());
                 currentRepo.save(nc);
                 added++;
+                visiblePerStorageService.recalculate(st, mat);
             }
         }
 

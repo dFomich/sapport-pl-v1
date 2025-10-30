@@ -7,16 +7,15 @@ import { faSort, faSortDown, faSortUp } from '@fortawesome/free-solid-svg-icons'
 import { ASC, DESC } from 'app/shared/util/pagination.constants';
 import { overrideSortStateWithQueryParams } from 'app/shared/util/entity-utils';
 import { useAppDispatch, useAppSelector } from 'app/config/store';
-
 import { getEntities } from './mechanic-tile.reducer';
 
 export const MechanicTile = () => {
   const dispatch = useAppDispatch();
-
   const pageLocation = useLocation();
   const navigate = useNavigate();
 
   const [sortState, setSortState] = useState(overrideSortStateWithQueryParams(getSortState(pageLocation, 'id'), pageLocation.search));
+  const [titleFilter, setTitleFilter] = useState('');
 
   const mechanicTileList = useAppSelector(state => state.mechanicTile.entities);
   const loading = useAppSelector(state => state.mechanicTile.loading);
@@ -49,37 +48,44 @@ export const MechanicTile = () => {
     });
   };
 
-  const handleSyncList = () => {
-    sortEntities();
+  const getSortIconByFieldName = (fieldName: string) => {
+    return sortState.sort !== fieldName ? faSort : sortState.order === ASC ? faSortUp : faSortDown;
   };
 
-  const getSortIconByFieldName = (fieldName: string) => {
-    const sortFieldName = sortState.sort;
-    const order = sortState.order;
-    if (sortFieldName !== fieldName) {
-      return faSort;
-    }
-    return order === ASC ? faSortUp : faSortDown;
-  };
+  const filteredList = mechanicTileList.filter(tile => tile.title?.toLowerCase().includes(titleFilter.toLowerCase()));
 
   return (
     <div>
       <h2 id="mechanic-tile-heading" data-cy="MechanicTileHeading">
         <Translate contentKey="wmmappApp.mechanicTile.home.title">Mechanic Tiles</Translate>
-        <div className="d-flex justify-content-end">
-          <Button className="me-2" color="info" onClick={handleSyncList} disabled={loading}>
+      </h2>
+
+      {/* Блок фильтра + кнопки */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Фильтр по названию (title)"
+          value={titleFilter}
+          onChange={e => setTitleFilter(e.target.value)}
+          style={{ maxWidth: '300px' }}
+        />
+
+        <div className="d-flex gap-2">
+          <Button color="info" onClick={sortEntities} disabled={loading}>
             <FontAwesomeIcon icon="sync" spin={loading} />{' '}
             <Translate contentKey="wmmappApp.mechanicTile.home.refreshListLabel">Refresh List</Translate>
           </Button>
-          <Link to="/mechanic-tile/new" className="btn btn-primary jh-create-entity" id="jh-create-entity" data-cy="entityCreateButton">
+          <Link to="/mechanic-tile/new" className="btn btn-primary" id="jh-create-entity">
             <FontAwesomeIcon icon="plus" />
             &nbsp;
             <Translate contentKey="wmmappApp.mechanicTile.home.createLabel">Create new Mechanic Tile</Translate>
           </Link>
         </div>
-      </h2>
+      </div>
+
       <div className="table-responsive">
-        {mechanicTileList && mechanicTileList.length > 0 ? (
+        {filteredList.length > 0 ? (
           <Table responsive>
             <thead>
               <tr>
@@ -107,71 +113,53 @@ export const MechanicTile = () => {
                   <FontAwesomeIcon icon={getSortIconByFieldName('active')} />
                 </th>
                 <th>
-                  <Translate contentKey="wmmappApp.mechanicTile.categories">Categories</Translate> <FontAwesomeIcon icon="sort" />
+                  <Translate contentKey="wmmappApp.mechanicTile.categories">Categories</Translate>
                 </th>
                 <th>
-                  <Translate contentKey="wmmappApp.mechanicTile.warehouses">Warehouses</Translate> <FontAwesomeIcon icon="sort" />
+                  <Translate contentKey="wmmappApp.mechanicTile.warehouses">Warehouses</Translate>
                 </th>
                 <th />
               </tr>
             </thead>
             <tbody>
-              {mechanicTileList.map((mechanicTile, i) => (
-                <tr key={`entity-${i}`} data-cy="entityTable">
+              {filteredList.map((tile, i) => (
+                <tr key={`entity-${i}`}>
                   <td>
-                    <Button tag={Link} to={`/mechanic-tile/${mechanicTile.id}`} color="link" size="sm">
-                      {mechanicTile.id}
+                    <Button tag={Link} to={`/mechanic-tile/${tile.id}`} color="link" size="sm">
+                      {tile.id}
                     </Button>
                   </td>
-                  <td>{mechanicTile.title}</td>
-                  <td>{mechanicTile.comment}</td>
-                  <td>{mechanicTile.materialCode}</td>
-                  <td>{mechanicTile.imageUrl}</td>
-                  <td>{mechanicTile.active ? 'true' : 'false'}</td>
+                  <td>{tile.title}</td>
+                  <td>{tile.comment}</td>
+                  <td>{tile.materialCode}</td>
+                  <td style={{ maxWidth: 280, wordBreak: 'break-all' }}>{tile.imageUrl}</td>
+                  <td>{tile.active ? 'true' : 'false'}</td>
                   <td>
-                    {mechanicTile.categories
-                      ? mechanicTile.categories.map((val, j) => (
-                          <span key={j}>
-                            <Link to={`/product-category/${val.id}`}>{val.name}</Link>
-                            {j === mechanicTile.categories.length - 1 ? '' : ', '}
-                          </span>
-                        ))
-                      : null}
+                    {tile.categories?.map((cat, j) => (
+                      <span key={j}>
+                        <Link to={`/product-category/${cat.id}`}>{cat.name}</Link>
+                        {j < tile.categories.length - 1 && ', '}
+                      </span>
+                    ))}
                   </td>
                   <td>
-                    {mechanicTile.warehouses
-                      ? mechanicTile.warehouses.map((val, j) => (
-                          <span key={j}>
-                            <Link to={`/warehouse/${val.id}`}>{val.code}</Link>
-                            {j === mechanicTile.warehouses.length - 1 ? '' : ', '}
-                          </span>
-                        ))
-                      : null}
+                    {tile.warehouses?.map((w, j) => (
+                      <span key={j}>
+                        <Link to={`/warehouse/${w.id}`}>{w.code}</Link>
+                        {j < tile.warehouses.length - 1 && ', '}
+                      </span>
+                    ))}
                   </td>
                   <td className="text-end">
                     <div className="btn-group flex-btn-group-container">
-                      <Button tag={Link} to={`/mechanic-tile/${mechanicTile.id}`} color="info" size="sm" data-cy="entityDetailsButton">
-                        <FontAwesomeIcon icon="eye" />{' '}
-                        <span className="d-none d-md-inline">
-                          <Translate contentKey="entity.action.view">View</Translate>
-                        </span>
+                      <Button tag={Link} to={`/mechanic-tile/${tile.id}`} color="info" size="sm">
+                        <FontAwesomeIcon icon="eye" /> <span className="d-none d-md-inline">View</span>
                       </Button>
-                      <Button tag={Link} to={`/mechanic-tile/${mechanicTile.id}/edit`} color="primary" size="sm" data-cy="entityEditButton">
-                        <FontAwesomeIcon icon="pencil-alt" />{' '}
-                        <span className="d-none d-md-inline">
-                          <Translate contentKey="entity.action.edit">Edit</Translate>
-                        </span>
+                      <Button tag={Link} to={`/mechanic-tile/${tile.id}/edit`} color="primary" size="sm">
+                        <FontAwesomeIcon icon="pencil-alt" /> <span className="d-none d-md-inline">Edit</span>
                       </Button>
-                      <Button
-                        onClick={() => (window.location.href = `/mechanic-tile/${mechanicTile.id}/delete`)}
-                        color="danger"
-                        size="sm"
-                        data-cy="entityDeleteButton"
-                      >
-                        <FontAwesomeIcon icon="trash" />{' '}
-                        <span className="d-none d-md-inline">
-                          <Translate contentKey="entity.action.delete">Delete</Translate>
-                        </span>
+                      <Button onClick={() => (window.location.href = `/mechanic-tile/${tile.id}/delete`)} color="danger" size="sm">
+                        <FontAwesomeIcon icon="trash" /> <span className="d-none d-md-inline">Delete</span>
                       </Button>
                     </div>
                   </td>

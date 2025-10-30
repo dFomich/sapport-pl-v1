@@ -23,6 +23,8 @@ public interface MechanicOrderRepository extends JpaRepository<MechanicOrder, St
     @Query("SELECT o FROM MechanicOrder o LEFT JOIN FETCH o.lines ORDER BY o.createdAt DESC")
     List<MechanicOrder> findAllWithLines();
 
+    List<MechanicOrder> findByCompletedAndCancelled(boolean completed, boolean cancelled);
+
     @Query(
         "SELECT o FROM MechanicOrder o LEFT JOIN FETCH o.lines WHERE LOWER(o.mechanicLogin) LIKE LOWER(CONCAT('%', :loginPart, '%')) ORDER BY o.createdAt DESC"
     )

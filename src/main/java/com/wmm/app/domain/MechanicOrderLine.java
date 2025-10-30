@@ -29,6 +29,9 @@ public class MechanicOrderLine implements Serializable {
     @JsonIgnoreProperties("lines")
     private MechanicOrder order;
 
+    @Column(name = "removed")
+    private boolean removed = false;
+
     // Геттеры и сеттеры
     public Long getId() {
         return id;
@@ -36,6 +39,14 @@ public class MechanicOrderLine implements Serializable {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public boolean isRemoved() {
+        return removed;
+    }
+
+    public void setRemoved(boolean removed) {
+        this.removed = removed;
     }
 
     public String getMaterialCode() {

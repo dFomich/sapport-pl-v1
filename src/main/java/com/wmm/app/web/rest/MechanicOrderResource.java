@@ -4,10 +4,13 @@ import com.wmm.app.domain.InventoryCurrent;
 import com.wmm.app.domain.MechanicOrder;
 import com.wmm.app.domain.MechanicOrderLine;
 import com.wmm.app.repository.InventoryCurrentRepository;
+import com.wmm.app.repository.InventoryVisiblePerStorageRepository;
 import com.wmm.app.repository.MechanicOrderRepository;
 import com.wmm.app.repository.MechanicTileRepository;
+import com.wmm.app.service.InventoryVisiblePerStorageService;
 import com.wmm.app.service.MechanicOrderService;
 import com.wmm.app.service.TelegramBotService;
+import com.wmm.app.service.dto.MechanicOrderLineDTO;
 import com.wmm.app.web.rest.errors.BadRequestAlertException;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
@@ -46,17 +49,23 @@ public class MechanicOrderResource {
     private final MechanicOrderRepository orderRepo;
     private final MechanicOrderService mechanicOrderService;
     private final MechanicTileRepository tileRepo;
+    private final InventoryVisiblePerStorageService visiblePerStorageService;
+    private final InventoryVisiblePerStorageRepository visiblePerStorageRepo;
 
     public MechanicOrderResource(
         InventoryCurrentRepository invRepo,
         MechanicOrderRepository orderRepo,
         MechanicOrderService mechanicOrderService,
-        MechanicTileRepository tileRepo
+        MechanicTileRepository tileRepo,
+        InventoryVisiblePerStorageService visiblePerStorageService,
+        InventoryVisiblePerStorageRepository visiblePerStorageRepo
     ) {
         this.invRepo = invRepo;
         this.orderRepo = orderRepo;
         this.mechanicOrderService = mechanicOrderService;
         this.tileRepo = tileRepo;
+        this.visiblePerStorageService = visiblePerStorageService;
+        this.visiblePerStorageRepo = visiblePerStorageRepo;
     }
 
     private String currentLogin() {
@@ -135,7 +144,7 @@ public class MechanicOrderResource {
             throw new BadRequestAlertException("Пустой заказ", "mechanicOrder", "empty");
         }
 
-        // валидация остатков
+        // валидация по фактическим остаткам
         for (var e : requested.entrySet()) {
             var stock = invRepo
                 .findByStorageTypeAndMaterial(req.storageType(), e.getKey())
@@ -146,33 +155,7 @@ public class MechanicOrderResource {
             }
         }
 
-        // списываем
-        for (var e : requested.entrySet()) {
-            var icOpt = invRepo.findByStorageTypeAndMaterial(req.storageType(), e.getKey());
-            icOpt.ifPresent(ic -> {
-                ic.setAvailableStock(ic.getAvailableStock() - e.getValue());
-                invRepo.save(ic);
-
-                String productTitle = titles.getOrDefault(ic.getMaterial(), ic.getMaterial());
-
-                // 🔴 если товар закончился
-                if (ic.getAvailableStock() <= 0) {
-                    telegramBotService.notifyOutOfStock(ic, productTitle, req.storageType());
-                }
-                // 🟡 если достигнут минимум, но товар ещё есть
-                else {
-                    tileRepo
-                        .findByMaterialCodeAndActiveTrue(ic.getMaterial())
-                        .ifPresent(tile -> {
-                            int minAlert = Optional.ofNullable(tile.getMinStockAlert()).orElse(0);
-                            if (minAlert > 0 && ic.getAvailableStock() <= minAlert) {
-                                telegramBotService.notifyLowStock(ic, productTitle, minAlert);
-                            }
-                        });
-                }
-            });
-        }
-
+        // создаём заявку
         Long orderId = System.currentTimeMillis();
         String login = currentLogin();
         Instant now = Instant.now();
@@ -206,6 +189,74 @@ public class MechanicOrderResource {
         entity.setLines(entityLines);
         orderRepo.save(entity);
 
+        for (var e : requested.entrySet()) {
+            String material = e.getKey();
+
+            // пересчитываем видимый остаток
+            visiblePerStorageService.recalculate(req.storageType(), material);
+
+            // уведомление по фактическому остатку
+            invRepo
+                .findByStorageTypeAndMaterial(req.storageType(), material)
+                .ifPresent(ic -> {
+                    String productTitle = titles.getOrDefault(ic.getMaterial(), ic.getMaterial());
+
+                    if (ic.getAvailableStock() <= 0) {
+                        // 🔴 товар закончился — уведомление на основе InventoryCurrent
+                        telegramBotService.notifyOutOfStock(ic.getMaterial(), productTitle, req.storageType());
+                    } else {
+                        // 🟡 проверка по InventoryVisible — доступный остаток
+                        tileRepo
+                            .findByMaterialCodeAndActiveTrue(material)
+                            .ifPresent(tile -> {
+                                int minAlert = Optional.ofNullable(tile.getMinStockAlert()).orElse(0);
+                                if (minAlert > 0) {
+                                    // достаём видимый остаток
+                                    visiblePerStorageRepo
+                                        .findByStorageTypeAndMaterial(req.storageType(), material)
+                                        .ifPresent(visible -> {
+                                            int visibleStock = visible.getVisibleStock();
+                                            if (visibleStock > 0 && visibleStock <= minAlert) {
+                                                telegramBotService.notifyLowStock(
+                                                    material,
+                                                    productTitle,
+                                                    visibleStock,
+                                                    minAlert,
+                                                    req.storageType()
+                                                );
+                                            }
+                                        });
+                                }
+                            });
+                    }
+                });
+        }
+
         return ResponseEntity.ok(new CheckoutResponse(orderId, req.orderName(), req.storageType(), login, now, lines));
+    }
+
+    @PutMapping("/{orderId}/lines")
+    @PreAuthorize("hasAnyAuthority('ROLE_WAREHOUSEMAN', 'ROLE_SENIOR_WAREHOUSEMAN')")
+    public ResponseEntity<Void> updateOrderLines(@PathVariable String orderId, @RequestBody List<MechanicOrderLineDTO> lines) {
+        mechanicOrderService.updateOrderLines(orderId, lines);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{orderId}/cancel")
+    @PreAuthorize("hasAnyAuthority('ROLE_WAREHOUSEMAN', 'ROLE_SENIOR_WAREHOUSEMAN')")
+    public ResponseEntity<Void> cancelOrder(@PathVariable String orderId) {
+        mechanicOrderService.cancelOrder(orderId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{orderId}/update-line")
+    @PreAuthorize("hasAnyAuthority('ROLE_WAREHOUSEMAN', 'ROLE_SENIOR_WAREHOUSEMAN')")
+    public ResponseEntity<Void> updateOrderLine(
+        @PathVariable String orderId,
+        @RequestParam String material,
+        @RequestParam(required = false) Integer newQty
+    ) {
+        mechanicOrderService.updateLineQtyOrDelete(orderId, material, newQty);
+        return ResponseEntity.ok().build();
     }
 }

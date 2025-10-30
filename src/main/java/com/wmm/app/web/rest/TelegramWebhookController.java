@@ -23,8 +23,9 @@ public class TelegramWebhookController {
             String callbackData = update.getCallbackQuery().getData();
             String chatId = update.getCallbackQuery().getMessage().getChatId().toString();
 
+            // ✅ Теперь совпадает с твоим callbackData ("/analogs_" + materialCode)
             if (callbackData.startsWith("/analogs_")) {
-                String materialCode = callbackData.substring(9);
+                String materialCode = callbackData.substring("/analogs_".length());
                 telegramBotService.handleAnalogRequest(materialCode, chatId);
             }
         }

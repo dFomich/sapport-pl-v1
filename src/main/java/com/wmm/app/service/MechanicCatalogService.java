@@ -3,6 +3,7 @@ package com.wmm.app.service;
 import com.wmm.app.domain.MechanicTile;
 import com.wmm.app.domain.ProductCategory;
 import com.wmm.app.repository.InventoryCurrentRepository;
+import com.wmm.app.repository.InventoryVisiblePerStorageRepository;
 import com.wmm.app.repository.MechanicTileRepository;
 import com.wmm.app.service.dto.MechanicTileViewDTO;
 import java.util.*;
@@ -17,10 +18,16 @@ public class MechanicCatalogService {
 
     private final MechanicTileRepository tileRepo;
     private final InventoryCurrentRepository invRepo;
+    private final InventoryVisiblePerStorageRepository visibleRepo;
 
-    public MechanicCatalogService(MechanicTileRepository tileRepo, InventoryCurrentRepository invRepo) {
+    public MechanicCatalogService(
+        MechanicTileRepository tileRepo,
+        InventoryCurrentRepository invRepo,
+        InventoryVisiblePerStorageRepository visibleRepo
+    ) {
         this.tileRepo = tileRepo;
         this.invRepo = invRepo;
+        this.visibleRepo = visibleRepo;
     }
 
     public Page<MechanicTileViewDTO> list(String storageType, String q, String category, Pageable pageable) {
@@ -49,13 +56,13 @@ public class MechanicCatalogService {
                 .collect(Collectors.toList());
         }
 
-        // 4) подмешиваем остаток по storageType из inventory_current
+        // 4) подмешиваем остаток
         List<MechanicTileViewDTO> dto = tiles
             .stream()
             .map(t -> {
-                Integer stock = invRepo
+                Integer stock = visibleRepo
                     .findByStorageTypeAndMaterial(storageType, t.getMaterialCode())
-                    .map(ic -> ic.getAvailableStock())
+                    .map(v -> v.getVisibleStock())
                     .orElse(0);
 
                 Set<String> cats = t
@@ -65,7 +72,7 @@ public class MechanicCatalogService {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toCollection(TreeSet::new));
 
-                // ⚠️ Добавили передачу minStockAlert
+                //  Добавили передачу minStockAlert
                 return new MechanicTileViewDTO(
                     t.getId(),
                     t.getTitle(),
@@ -73,7 +80,7 @@ public class MechanicCatalogService {
                     t.getImageUrl(),
                     t.getMaterialCode(),
                     stock,
-                    t.getMinStockAlert(), // ← вот это новое поле
+                    t.getMinStockAlert(),
                     cats
                 );
             })

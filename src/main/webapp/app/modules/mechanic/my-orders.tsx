@@ -23,6 +23,7 @@ type Order = {
   createdAt: string;
   storageType: string;
   completed: boolean;
+  cancelled?: boolean;
 };
 
 const MyOrders = () => {
@@ -160,9 +161,10 @@ const MyOrders = () => {
                 </div>
 
                 <div className="d-flex align-items-center gap-2">
-                  <span className={`badge ${order.completed ? 'bg-success' : 'bg-warning'}`}>
-                    {order.completed ? 'Завершено' : 'В процессе'}
+                  <span className={`badge ${order.cancelled ? 'bg-danger' : order.completed ? 'bg-success' : 'bg-warning'}`}>
+                    {order.cancelled ? 'Удалена' : order.completed ? 'Завершено' : 'В процессе'}
                   </span>
+
                   <button className="btn btn-outline-primary btn-sm" onClick={() => toggleDetails(order.orderId)}>
                     {expandedOrderId === order.orderId ? 'Скрыть детали' : 'Детали'}
                   </button>
