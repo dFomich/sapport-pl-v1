@@ -120,114 +120,127 @@ const WarehouseOrders = () => {
     const order = orders.find(o => o.orderId === orderId);
     if (!order) return;
 
-    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-    doc.setFont('DejaVuSans', 'normal');
-
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const marginLeft = 50;
-    const marginRight = 50;
-
-    const logoWidth = 110;
-    const logoHeight = 35;
-    const qrSize = 50;
-    const cellHeight = qrSize + 14;
-
-    // === ГРАДИЕНТ ===
-    const gradientHeight = 120;
-    for (let y = 0; y < gradientHeight; y++) {
-      const t = y / gradientHeight;
-      const r = 225 + t * 25;
-      const g = 235 + t * 20;
-      const b = 255;
-      doc.setFillColor(r, g, b);
-      doc.rect(0, y, pageWidth, 1, 'F');
-    }
-
-    // === ЛОГОТИП (слева) ===
     try {
-      const logo = new Image();
-      logo.src = 'content/images/logo-sapport.png';
-      await new Promise<void>(resolve => {
-        logo.onload = () => resolve();
-        logo.onerror = () => resolve();
-      });
-      const logoX = marginLeft;
-      const logoY = 25;
-      doc.addImage(logo, 'PNG', logoX, logoY, logoWidth, logoHeight, '', 'FAST');
-    } catch {
-      console.warn('⚠️ Логотип не найден — пропускаем');
-    }
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
 
-    // === ЗАГОЛОВОК ===
-    const headerY = 110;
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(18);
-    doc.text(`Заявка на выдачу #${order.orderId}`, marginLeft, headerY);
-    doc.setFontSize(12);
-    doc.text(`Дата: ${format(new Date(order.createdAt), 'dd.MM.yyyy HH:mm')}`, marginLeft, headerY + 22);
-    doc.text(`Механик: ${order.mechanicLogin}`, marginLeft, headerY + 40);
+      // ✅ КРИТИЧНО: Явно загружаем и устанавливаем шрифт
+      try {
+        doc.setFont('DejaVuSans', 'normal');
+      } catch (fontError) {
+        console.warn('DejaVuSans не найден, используем стандартный шрифт', fontError);
+        doc.setFont('helvetica', 'normal'); // Fallback на встроенный шрифт
+      }
 
-    // === Тонкая разделительная линия под шапкой ===
-    doc.setDrawColor(210, 210, 210);
-    doc.setLineWidth(0.6);
-    doc.line(marginLeft, headerY + 55, pageWidth - marginRight, headerY + 55);
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const marginLeft = 50;
+      const marginRight = 50;
 
-    // === Подготовка таблицы ===
-    const rows: any[] = [];
-    for (let i = 0; i < order.lines.length; i++) {
-      const line = order.lines[i];
-      const qrDataUrl = await QRCode.toDataURL(line.materialCode, { margin: 0 });
-      rows.push([i + 1, line.materialCode, line.title, String(line.qty), { image: qrDataUrl }]);
-    }
+      const logoWidth = 110;
+      const logoHeight = 35;
+      const qrSize = 50;
+      const cellHeight = qrSize + 14;
 
-    // === Таблица ===
-    autoTable(doc, {
-      startY: headerY + 70,
-      head: [['#', 'Код', 'Название', 'Кол-во', 'QR-код']],
-      body: rows.map(r => [r[0], r[1], r[2], r[3], '']),
-      styles: {
-        font: 'DejaVuSans',
-        fontSize: 11,
-        cellPadding: 6,
-        minCellHeight: cellHeight,
-        valign: 'middle',
-      },
-      headStyles: {
-        fillColor: [48, 84, 150],
-        textColor: 255,
-        fontStyle: 'bold',
-        halign: 'center',
-        minCellHeight: 22,
-      },
-      columnStyles: {
-        0: { halign: 'center', cellWidth: 35 },
-        1: { halign: 'center', cellWidth: 100 },
-        2: { cellWidth: 260 },
-        3: { halign: 'center', cellWidth: 60 },
-        4: { halign: 'center', cellWidth: 80 },
-      },
-      margin: { left: marginLeft, right: marginRight },
-      tableWidth: pageWidth - marginLeft - marginRight,
-      didDrawCell(data) {
-        if (data.cell.section === 'body' && data.column.index === 4) {
-          const src = rows[data.row.index]?.[4]?.image;
-          if (src) {
-            const x = data.cell.x + (data.cell.width - qrSize) / 2;
-            const y = data.cell.y + (data.cell.height - qrSize) / 2;
-            doc.addImage(src, 'PNG', x, y, qrSize, qrSize);
+      // === ГРАДИЕНТ ===
+      const gradientHeight = 120;
+      for (let y = 0; y < gradientHeight; y++) {
+        const t = y / gradientHeight;
+        const r = 225 + t * 25;
+        const g = 235 + t * 20;
+        const b = 255;
+        doc.setFillColor(r, g, b);
+        doc.rect(0, y, pageWidth, 1, 'F');
+      }
+
+      // === ЛОГОТИП ===
+      try {
+        const logo = new Image();
+        logo.src = 'content/images/logo-sapport.png';
+        await new Promise<void>(resolve => {
+          logo.onload = () => resolve();
+          logo.onerror = () => resolve();
+        });
+        const logoX = marginLeft;
+        const logoY = 25;
+        doc.addImage(logo, 'PNG', logoX, logoY, logoWidth, logoHeight, '', 'FAST');
+      } catch {
+        console.warn('⚠️ Логотип не найден — пропускаем');
+      }
+
+      // === ЗАГОЛОВОК ===
+      const headerY = 110;
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(18);
+      doc.text(`Заявка на выдачу #${order.orderId}`, marginLeft, headerY);
+      doc.setFontSize(12);
+      doc.text(`Дата: ${format(new Date(order.createdAt), 'dd.MM.yyyy HH:mm')}`, marginLeft, headerY + 22);
+      doc.text(`Механик: ${order.mechanicLogin}`, marginLeft, headerY + 40);
+
+      // === Разделительная линия ===
+      doc.setDrawColor(210, 210, 210);
+      doc.setLineWidth(0.6);
+      doc.line(marginLeft, headerY + 55, pageWidth - marginRight, headerY + 55);
+
+      // === Подготовка таблицы ===
+      const rows: any[] = [];
+      for (let i = 0; i < order.lines.length; i++) {
+        const line = order.lines[i];
+        const qrDataUrl = await QRCode.toDataURL(line.materialCode, { margin: 0 });
+        rows.push([i + 1, line.materialCode, line.title, String(line.qty), { image: qrDataUrl }]);
+      }
+
+      // === Таблица ===
+      autoTable(doc, {
+        startY: headerY + 70,
+        head: [['#', 'Код', 'Название', 'Кол-во', 'QR-код']],
+        body: rows.map(r => [r[0], r[1], r[2], r[3], '']),
+        styles: {
+          font: 'DejaVuSans',
+          fontSize: 11,
+          cellPadding: 6,
+          minCellHeight: cellHeight,
+          valign: 'middle',
+          fontStyle: 'normal', // ✅ Явно указываем стиль
+        },
+        headStyles: {
+          fillColor: [48, 84, 150],
+          textColor: 255,
+          fontStyle: 'bold',
+          halign: 'center',
+          minCellHeight: 22,
+        },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 35 },
+          1: { halign: 'center', cellWidth: 100 },
+          2: { cellWidth: 260 },
+          3: { halign: 'center', cellWidth: 60 },
+          4: { halign: 'center', cellWidth: 80 },
+        },
+        margin: { left: marginLeft, right: marginRight },
+        tableWidth: pageWidth - marginLeft - marginRight,
+        didDrawCell(data) {
+          if (data.cell.section === 'body' && data.column.index === 4) {
+            const src = rows[data.row.index]?.[4]?.image;
+            if (src) {
+              const x = data.cell.x + (data.cell.width - qrSize) / 2;
+              const y = data.cell.y + (data.cell.height - qrSize) / 2;
+              doc.addImage(src, 'PNG', x, y, qrSize, qrSize);
+            }
           }
-        }
-      },
-    });
+        },
+      });
 
-    // === ФУТЕР ===
-    doc.setFontSize(10);
-    doc.setTextColor(130, 130, 130);
-    doc.text('Документ сгенерирован автоматически системой SAPPort', marginLeft, pageHeight - 45);
-    doc.text('© 2025 SAPPort', pageWidth - 130, pageHeight - 45);
+      // === ФУТЕР ===
+      doc.setFontSize(10);
+      doc.setTextColor(130, 130, 130);
+      doc.text('Документ сгенерирован автоматически системой SAPPort', marginLeft, pageHeight - 45);
+      doc.text('© 2025 SAPPort', pageWidth - 130, pageHeight - 45);
 
-    doc.save(`SAPPort_order_${order.orderId}.pdf`);
+      doc.save(`SAPPort_order_${order.orderId}.pdf`);
+    } catch (error) {
+      console.error('Ошибка генерации PDF:', error);
+      alert('Не удалось создать PDF. Проверьте консоль для деталей.');
+    }
   };
 
   const handleQuickPrint = (order: Order) => {
