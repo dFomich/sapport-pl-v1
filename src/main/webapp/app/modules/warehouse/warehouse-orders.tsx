@@ -10,7 +10,7 @@ import QRCode from 'qrcode';
 import 'react-datepicker/dist/react-datepicker.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'app/shared/pdf/dejavuFont';
-import { preloadDejaVuFont, addDejaVuFont } from 'app/shared/pdf/dejavuFont';
+import { preloadDejaVuFont, addDejaVuFont, isFontLoaded } from 'app/shared/pdf/dejavuFont';
 
 type OrderLine = {
   materialCode: string;
@@ -127,9 +127,14 @@ const WarehouseOrders = () => {
     if (!order) return;
 
     try {
+      // ✅ ДОБАВЛЕНО: Ждём загрузки шрифта перед созданием PDF
+      if (!isFontLoaded()) {
+        console.warn('⏳ Шрифт ещё не загружен, ждём...');
+        await preloadDejaVuFont();
+      }
+
       const doc = new jsPDF({ unit: 'pt', format: 'a4' });
 
-      // ✅ ИЗМЕНЕНО: Используем DejaVu вместо courier
       addDejaVuFont(doc);
       doc.setFont('DejaVuSans', 'normal');
 
@@ -173,7 +178,6 @@ const WarehouseOrders = () => {
       const headerY = 110;
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(18);
-      // ✅ ИЗМЕНЕНО: Вернули кириллицу
       doc.text(`Заявка на выдачу #${order.orderId}`, marginLeft, headerY);
       doc.setFontSize(12);
       doc.text(`Дата: ${format(new Date(order.createdAt), 'dd.MM.yyyy HH:mm')}`, marginLeft, headerY + 22);
@@ -195,11 +199,10 @@ const WarehouseOrders = () => {
       // === Таблица ===
       autoTable(doc, {
         startY: headerY + 70,
-        // ✅ ИЗМЕНЕНО: Вернули кириллицу в заголовки
         head: [['#', 'Код', 'Название', 'Кол-во', 'QR-код']],
         body: rows.map(r => [r[0], r[1], r[2], r[3], '']),
         styles: {
-          font: 'DejaVuSans', // ✅ ИЗМЕНЕНО: Используем DejaVu
+          font: 'DejaVuSans',
           fontSize: 11,
           cellPadding: 6,
           minCellHeight: cellHeight,
@@ -236,7 +239,6 @@ const WarehouseOrders = () => {
       // === ФУТЕР ===
       doc.setFontSize(10);
       doc.setTextColor(130, 130, 130);
-      // ✅ ИЗМЕНЕНО: Вернули кириллицу
       doc.text('Документ сгенерирован автоматически системой SAPPort', marginLeft, pageHeight - 45);
       doc.text('© 2025 SAPPort', pageWidth - 130, pageHeight - 45);
 
