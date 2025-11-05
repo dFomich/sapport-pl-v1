@@ -10,6 +10,7 @@ import QRCode from 'qrcode';
 import 'react-datepicker/dist/react-datepicker.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'app/shared/pdf/dejavuFont';
+import { preloadDejaVuFont, addDejaVuFont } from 'app/shared/pdf/dejavuFont';
 
 type OrderLine = {
   materialCode: string;
@@ -48,6 +49,11 @@ const WarehouseOrders = () => {
 
   useEffect(() => {
     fetchOrders();
+
+    // ✅ ДОБАВЛЕНО: Предзагрузка шрифта DejaVu
+    preloadDejaVuFont().catch(err => {
+      console.error('Не удалось загрузить шрифт DejaVu:', err);
+    });
 
     // Автоматическое обновление каждые 30 секунд
     const refreshInterval = setInterval(() => {
@@ -123,13 +129,9 @@ const WarehouseOrders = () => {
     try {
       const doc = new jsPDF({ unit: 'pt', format: 'a4' });
 
-      // ✅ КРИТИЧНО: Явно загружаем и устанавливаем шрифт
-      try {
-        doc.setFont('DejaVuSans', 'normal');
-      } catch (fontError) {
-        console.warn('DejaVuSans не найден, используем стандартный шрифт', fontError);
-        doc.setFont('helvetica', 'normal'); // Fallback на встроенный шрифт
-      }
+      // ✅ ИЗМЕНЕНО: Используем DejaVu вместо courier
+      addDejaVuFont(doc);
+      doc.setFont('DejaVuSans', 'normal');
 
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
@@ -171,6 +173,7 @@ const WarehouseOrders = () => {
       const headerY = 110;
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(18);
+      // ✅ ИЗМЕНЕНО: Вернули кириллицу
       doc.text(`Заявка на выдачу #${order.orderId}`, marginLeft, headerY);
       doc.setFontSize(12);
       doc.text(`Дата: ${format(new Date(order.createdAt), 'dd.MM.yyyy HH:mm')}`, marginLeft, headerY + 22);
@@ -192,15 +195,15 @@ const WarehouseOrders = () => {
       // === Таблица ===
       autoTable(doc, {
         startY: headerY + 70,
+        // ✅ ИЗМЕНЕНО: Вернули кириллицу в заголовки
         head: [['#', 'Код', 'Название', 'Кол-во', 'QR-код']],
         body: rows.map(r => [r[0], r[1], r[2], r[3], '']),
         styles: {
-          font: 'DejaVuSans',
+          font: 'DejaVuSans', // ✅ ИЗМЕНЕНО: Используем DejaVu
           fontSize: 11,
           cellPadding: 6,
           minCellHeight: cellHeight,
           valign: 'middle',
-          fontStyle: 'normal', // ✅ Явно указываем стиль
         },
         headStyles: {
           fillColor: [48, 84, 150],
@@ -233,6 +236,7 @@ const WarehouseOrders = () => {
       // === ФУТЕР ===
       doc.setFontSize(10);
       doc.setTextColor(130, 130, 130);
+      // ✅ ИЗМЕНЕНО: Вернули кириллицу
       doc.text('Документ сгенерирован автоматически системой SAPPort', marginLeft, pageHeight - 45);
       doc.text('© 2025 SAPPort', pageWidth - 130, pageHeight - 45);
 
