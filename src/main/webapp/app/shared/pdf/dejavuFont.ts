@@ -1,61 +1,40 @@
 import jsPDF from 'jspdf';
-// @ts-expect-error: file-loader used to import font as URL
-import fontUrl from '!!file-loader!../../../content/fonts/DejaVuSans.ttf';
+import { dejaVuSansBase64 } from './dejavuFontBase64';
 
-let fontLoaded = false;
-let fontBase64: string | null = null;
-let loadingPromise: Promise<void> | null = null;
+let fontRegistered = false;
 
 // Функция для предзагрузки шрифта
 export const preloadDejaVuFont = async (): Promise<void> => {
-  // Если уже загружается, возвращаем существующий промис
-  if (loadingPromise) {
-    return loadingPromise;
-  }
-
-  // Если уже загружен, сразу возвращаемся
-  if (fontLoaded && fontBase64) {
-    console.warn('✅ DejaVu шрифт уже загружен');
+  if (fontRegistered) {
+    console.warn('✅ DejaVu шрифт уже зарегистрирован');
     return Promise.resolve();
   }
 
-  loadingPromise = (async () => {
-    try {
-      console.warn('🔄 Начинаем загрузку шрифта DejaVu...');
-      const response = await fetch(fontUrl);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const fontBuffer = await response.arrayBuffer();
-      const uint8Array = new Uint8Array(fontBuffer);
-      const binaryString = Array.from(uint8Array)
-        .map(byte => String.fromCharCode(byte))
-        .join('');
-      fontBase64 = btoa(binaryString);
-      fontLoaded = true;
-      console.warn('✅ DejaVu шрифт успешно загружен');
-    } catch (error) {
-      console.error('❌ Ошибка загрузки шрифта DejaVu:', error);
-      fontLoaded = false;
-      fontBase64 = null;
-      loadingPromise = null;
-      throw error;
+  try {
+    console.warn('🔄 Регистрируем шрифт DejaVu...');
+    // Проверяем, что Base64 не пустой
+    if (!dejaVuSansBase64 || dejaVuSansBase64.length < 1000) {
+      throw new Error('Base64 шрифта не загружен или повреждён');
     }
-  })();
-
-  return loadingPromise;
+    fontRegistered = true;
+    console.warn(`✅ DejaVu шрифт зарегистрирован (${dejaVuSansBase64.length} символов)`);
+  } catch (error) {
+    console.error('❌ Ошибка регистрации шрифта DejaVu:', error);
+    fontRegistered = false;
+    throw error;
+  }
 };
 
 // Функция для добавления шрифта в документ
 export const addDejaVuFont = (doc: jsPDF): void => {
-  if (!fontLoaded || !fontBase64) {
-    throw new Error('Шрифт DejaVu не загружен. Вызовите preloadDejaVuFont() перед использованием.');
+  if (!fontRegistered) {
+    console.warn('⚠️ Шрифт не зарегистрирован, регистрируем сейчас...');
+    fontRegistered = true;
   }
 
   try {
-    doc.addFileToVFS('DejaVuSans.ttf', fontBase64);
+    console.warn('📄 Добавляем шрифт в PDF документ...');
+    doc.addFileToVFS('DejaVuSans.ttf', dejaVuSansBase64);
     doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
     doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'bold');
     console.warn('✅ Шрифт DejaVu добавлен в документ');
@@ -65,7 +44,7 @@ export const addDejaVuFont = (doc: jsPDF): void => {
   }
 };
 
-// Проверка, загружен ли шрифт
+// Проверка, зарегистрирован ли шрифт
 export const isFontLoaded = (): boolean => {
-  return fontLoaded && fontBase64 !== null;
+  return fontRegistered;
 };
