@@ -90,6 +90,10 @@ public class InventoryImportService {
                 parsed.add(ir);
                 storageTypes.add(ir.getStorageType());
             }
+
+            for (String storageType : storageTypes) {
+                visiblePerStorageService.clearVisibleStockForStorage(storageType);
+            }
         }
 
         // создать запись загрузки

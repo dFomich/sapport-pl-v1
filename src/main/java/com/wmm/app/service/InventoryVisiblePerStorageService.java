@@ -64,4 +64,9 @@ public class InventoryVisiblePerStorageService {
 
         visibleRepo.save(visible);
     }
+
+    public void clearVisibleStockForStorage(String storageType) {
+        List<InventoryVisiblePerStorage> entries = visibleRepo.findByStorageType(storageType);
+        visibleRepo.deleteAll(entries);
+    }
 }

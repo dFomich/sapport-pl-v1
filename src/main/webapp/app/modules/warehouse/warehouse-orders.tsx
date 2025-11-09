@@ -9,6 +9,7 @@ import autoTable from 'jspdf-autotable';
 import QRCode from 'qrcode';
 import 'react-datepicker/dist/react-datepicker.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import './warehouse-orders.scss';
 import 'app/shared/pdf/dejavuFont';
 import { preloadDejaVuFont, addDejaVuFont, isFontLoaded } from 'app/shared/pdf/dejavuFont';
 
@@ -50,7 +51,6 @@ const WarehouseOrders = () => {
   useEffect(() => {
     fetchOrders();
 
-    // ✅ ДОБАВЛЕНО: Предзагрузка шрифта DejaVu
     preloadDejaVuFont().catch(err => {
       console.error('Не удалось загрузить шрифт DejaVu:', err);
     });
@@ -78,7 +78,7 @@ const WarehouseOrders = () => {
   }, []);
 
   const fetchOrders = () => {
-    if (isRefreshing) return; // Предотвращаем повторные запросы
+    if (isRefreshing) return;
 
     setIsRefreshing(true);
     setRefreshProgress(0);
@@ -127,7 +127,6 @@ const WarehouseOrders = () => {
     if (!order) return;
 
     try {
-      // ✅ ДОБАВЛЕНО: Ждём загрузки шрифта перед созданием PDF
       if (!isFontLoaded()) {
         console.warn('⏳ Шрифт ещё не загружен, ждём...');
         await preloadDejaVuFont();
@@ -351,7 +350,7 @@ const WarehouseOrders = () => {
   };
 
   return (
-    <div className="container mt-4">
+    <div className="warehouse-orders container mt-4">
       <style>{`
         .modern-modal .modal-content {
           border-radius: 8px;
@@ -826,6 +825,75 @@ const WarehouseOrders = () => {
               </div>
             </div>
           ))}
+
+          {totalPages > 1 && (
+            <div className="pagination-container">
+              <button
+                className="pagination-btn pagination-arrow"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                title="Первая страница"
+              >
+                ⟪
+              </button>
+              <button
+                className="pagination-btn pagination-arrow"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                title="Предыдущая"
+              >
+                ‹
+              </button>
+
+              <div className="pagination-numbers">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page => {
+                    if (page === 1 || page === totalPages) return true;
+                    if (Math.abs(page - currentPage) <= 1) return true;
+                    return false;
+                  })
+                  .map((page, idx, arr) => {
+                    const showDots = idx > 0 && page - arr[idx - 1] > 1;
+                    return (
+                      <React.Fragment key={page}>
+                        {showDots && <span className="pagination-dots">···</span>}
+                        <button
+                          className={`pagination-btn pagination-number ${currentPage === page ? 'active' : ''}`}
+                          onClick={() => setCurrentPage(page)}
+                        >
+                          {page}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
+              </div>
+
+              <button
+                className="pagination-btn pagination-arrow"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                title="Следующая"
+              >
+                ›
+              </button>
+              <button
+                className="pagination-btn pagination-arrow"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                title="Последняя страница"
+              >
+                ⟫
+              </button>
+
+              <div className="pagination-info">
+                <span>{visibleOrders.length} заявок</span>
+                <span className="pagination-separator">·</span>
+                <span>
+                  Страница {currentPage} из {totalPages}
+                </span>
+              </div>
+            </div>
+          )}
         </>
       )}
 
