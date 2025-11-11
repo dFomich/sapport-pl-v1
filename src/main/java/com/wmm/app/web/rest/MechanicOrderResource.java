@@ -13,11 +13,16 @@ import com.wmm.app.service.TelegramBotService;
 import com.wmm.app.service.dto.MechanicOrderLineDTO;
 import com.wmm.app.web.rest.errors.BadRequestAlertException;
 import jakarta.transaction.Transactional;
+import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -258,5 +263,181 @@ public class MechanicOrderResource {
     ) {
         mechanicOrderService.updateLineQtyOrDelete(orderId, material, newQty);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportOrders(@RequestParam String from, @RequestParam String to) {
+        try {
+            Instant fromDate = Instant.parse(from);
+            Instant toDate = Instant.parse(to).plus(1, ChronoUnit.DAYS);
+
+            List<MechanicOrder> orders = orderRepo.findOrdersInRangeWithLines(fromDate, toDate);
+
+            Workbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Заявки");
+
+            // === СТИЛИ ===
+            // Заголовок таблицы
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerFont.setFontHeightInPoints((short) 12);
+            headerFont.setColor(IndexedColors.WHITE.getIndex());
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setBorderBottom(BorderStyle.THIN);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+
+            // Заголовок заявки
+            CellStyle orderHeaderStyle = workbook.createCellStyle();
+            Font orderFont = workbook.createFont();
+            orderFont.setBold(true);
+            orderHeaderStyle.setFont(orderFont);
+            orderHeaderStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            orderHeaderStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            orderHeaderStyle.setBorderBottom(BorderStyle.THIN);
+            orderHeaderStyle.setBorderTop(BorderStyle.THIN);
+            orderHeaderStyle.setBorderLeft(BorderStyle.THIN);
+            orderHeaderStyle.setBorderRight(BorderStyle.THIN);
+            orderHeaderStyle.setAlignment(HorizontalAlignment.CENTER);
+
+            // Чередующиеся фоны заказов
+            CellStyle lightOrderStyle = workbook.createCellStyle();
+            lightOrderStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            lightOrderStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle whiteOrderStyle = workbook.createCellStyle();
+            // без заливки
+
+            // Дата
+            CellStyle dateStyle = workbook.createCellStyle();
+            dateStyle.setDataFormat(workbook.createDataFormat().getFormat("dd.MM.yyyy HH:mm"));
+
+            // === ЗАГОЛОВОК ===
+            Row headerRow = sheet.createRow(0);
+            String[] headers = { "Заявка", "Механик", "Дата создания", "Код товара", "Название", "Склад", "Кол-во", "Статус" };
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // === ДАННЫЕ ===
+            int rowNum = 1;
+            for (int orderIndex = 0; orderIndex < orders.size(); orderIndex++) {
+                MechanicOrder order = orders.get(orderIndex);
+                boolean isEvenOrder = (orderIndex % 2 == 0);
+                CellStyle rowStyle = isEvenOrder ? whiteOrderStyle : lightOrderStyle;
+
+                for (int lineIndex = 0; lineIndex < order.getLines().size(); lineIndex++) {
+                    MechanicOrderLine line = order.getLines().get(lineIndex);
+                    Row row = sheet.createRow(rowNum++);
+
+                    // Заявка
+                    Cell cellOrderId = row.createCell(0);
+                    if (lineIndex == 0) {
+                        cellOrderId.setCellValue(order.getOrderId());
+                        cellOrderId.setCellStyle(orderHeaderStyle);
+                    } else {
+                        cellOrderId.setCellValue("");
+                        cellOrderId.setCellStyle(rowStyle);
+                    }
+
+                    // Механик
+                    Cell cellMechanic = row.createCell(1);
+                    if (lineIndex == 0) {
+                        cellMechanic.setCellValue(order.getMechanicLogin());
+                        cellMechanic.setCellStyle(orderHeaderStyle);
+                    } else {
+                        cellMechanic.setCellValue("");
+                        cellMechanic.setCellStyle(rowStyle);
+                    }
+
+                    // Дата
+                    Cell cellDate = row.createCell(2);
+                    if (lineIndex == 0) {
+                        cellDate.setCellValue(Date.from(order.getCreatedAt()));
+                        CellStyle dateCellStyle = workbook.createCellStyle();
+                        dateCellStyle.cloneStyleFrom(orderHeaderStyle);
+                        dateCellStyle.setDataFormat(workbook.createDataFormat().getFormat("dd.MM.yyyy HH:mm"));
+                        cellDate.setCellStyle(dateCellStyle);
+                    } else {
+                        cellDate.setCellValue("");
+                        cellDate.setCellStyle(rowStyle);
+                    }
+
+                    // Код товара
+                    Cell cellCode = row.createCell(3);
+                    cellCode.setCellValue(line.getMaterialCode());
+                    cellCode.setCellStyle(rowStyle);
+
+                    // Название
+                    Cell cellTitle = row.createCell(4);
+                    cellTitle.setCellValue(line.getTitle());
+                    cellTitle.setCellStyle(rowStyle);
+
+                    // Склад
+                    Cell cellStorage = row.createCell(5);
+                    cellStorage.setCellValue(order.getStorageType());
+                    cellStorage.setCellStyle(rowStyle);
+
+                    // Количество
+                    Cell cellQty = row.createCell(6);
+                    cellQty.setCellValue(line.getQty());
+                    cellQty.setCellStyle(rowStyle);
+
+                    // Статус
+                    Cell cellStatus = row.createCell(7);
+                    String status = order.isCancelled() ? "Отменена" : order.isCompleted() ? "Выдана" : "В процессе";
+                    cellStatus.setCellValue(status);
+                    cellStatus.setCellStyle(rowStyle);
+                }
+
+                // === Разделительная пустая строка между заказами ===
+                rowNum++;
+            }
+
+            // === ГРАНИЦЫ ДЛЯ ВСЕХ ЯЧЕЕК ===
+            for (int i = 0; i < sheet.getPhysicalNumberOfRows(); i++) {
+                Row row = sheet.getRow(i);
+                if (row != null) {
+                    for (int j = 0; j < headers.length; j++) {
+                        Cell cell = row.getCell(j);
+                        if (cell != null) {
+                            CellStyle borderedStyle = workbook.createCellStyle();
+                            borderedStyle.cloneStyleFrom(cell.getCellStyle());
+                            borderedStyle.setBorderBottom(BorderStyle.THIN);
+                            borderedStyle.setBorderTop(BorderStyle.THIN);
+                            borderedStyle.setBorderLeft(BorderStyle.THIN);
+                            borderedStyle.setBorderRight(BorderStyle.THIN);
+                            cell.setCellStyle(borderedStyle);
+                        }
+                    }
+                }
+            }
+
+            // === АВТОШИРИНА КОЛОНОК ===
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+                sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 512);
+            }
+
+            // === СОХРАНЕНИЕ ===
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            workbook.write(outputStream);
+            workbook.close();
+
+            HttpHeaders headersHttp = new HttpHeaders();
+            headersHttp.add("Content-Disposition", "attachment; filename=orders_export.xlsx");
+
+            return ResponseEntity.ok()
+                .headers(headersHttp)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(outputStream.toByteArray());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
     }
 }

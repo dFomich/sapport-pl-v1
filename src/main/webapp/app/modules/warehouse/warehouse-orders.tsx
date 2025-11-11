@@ -47,6 +47,10 @@ const WarehouseOrders = () => {
   const [refreshProgress, setRefreshProgress] = useState(0);
   const itemsPerPage = 25;
   const printRef = useRef<HTMLDivElement>(null);
+  const [exportFrom, setExportFrom] = useState<Date | null>(null);
+  const [exportTo, setExportTo] = useState<Date | null>(null);
+  const [showExportPanel, setShowExportPanel] = useState(false);
+  const [searchMaterial, setSearchMaterial] = useState('');
 
   useEffect(() => {
     fetchOrders();
@@ -100,23 +104,40 @@ const WarehouseOrders = () => {
 
   useEffect(() => {
     let filtered = [...orders];
+
+    // фильтр по вкладке
     filtered = filtered.filter(order => (activeTab === 'active' ? !order.completed : order.completed));
 
+    // фильтр по номеру заявки
     if (search.trim()) {
       filtered = filtered.filter(order => order.orderId.toLowerCase().includes(search.toLowerCase()));
     }
 
+    // фильтр по коду детали (по всем строкам)
+    if (searchMaterial.trim()) {
+      filtered = filtered.filter(order => order.lines.some(line => line.materialCode.toLowerCase().includes(searchMaterial.toLowerCase())));
+    }
+
+    // фильтр по дате
     if (selectedDate) {
       filtered = filtered.filter(order => isSameDay(parseISO(order.createdAt), selectedDate));
     }
 
+    // сортировка
     if (sortAsc !== null) {
       filtered.sort((a, b) => (sortAsc ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt)));
     }
 
     setCurrentPage(1);
     setVisibleOrders(filtered);
-  }, [orders, search, selectedDate, sortAsc, activeTab]);
+  }, [orders, search, searchMaterial, selectedDate, sortAsc, activeTab]);
+
+  // 🔹 Сброс фильтров при переключении вкладки
+  useEffect(() => {
+    setSearch('');
+    setSearchMaterial('');
+    setSelectedDate(null);
+  }, [activeTab]);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const pagedOrders = visibleOrders.slice(startIndex, startIndex + itemsPerPage);
@@ -346,6 +367,37 @@ const WarehouseOrders = () => {
       setSelectedOrder(null);
     } catch {
       alert('Ошибка при удалении заявки');
+    }
+  };
+
+  // ✅ ДОБАВЛЕНО: Экспорт заявок в Excel
+  const handleExportExcel = async () => {
+    if (!exportFrom || !exportTo) {
+      alert('Выберите период для экспорта');
+      return;
+    }
+
+    const fromIso = exportFrom.toISOString();
+    const toIso = exportTo.toISOString();
+
+    try {
+      const response = await axios.get('/api/mechanic-orders/export', {
+        params: { from: fromIso, to: toIso },
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const fileName = `заявки_${format(exportFrom, 'dd.MM.yyyy')}_${format(exportTo, 'dd.MM.yyyy')}.xlsx`;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Ошибка экспорта:', err);
+      alert('Не удалось выполнить экспорт заявок');
     }
   };
 
@@ -766,10 +818,73 @@ const WarehouseOrders = () => {
         .modern-modal .modal-content {
           animation: modalFadeIn 0.2s ease;
         }
+        .btn-export-toggle {
+  background: none !important;
+  border: none !important;
+  color: #555 !important;
+  font-size: 1.4rem !important;
+  cursor: pointer !important;
+  transition: transform 0.2s ease, color 0.2s ease;
+  margin-left: auto !important;
+}
+
+.btn-export-toggle:hover {
+  color: #198754 !important;
+  transform: rotate(180deg);
+}
+
+.btn-export-toggle::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.btn-export-toggle:hover::after {
+  opacity: 1;
+}
+
+.datepicker-popper {
+  z-index: 3000 !important;
+}
+.react-datepicker-popper {
+  z-index: 3000 !important;
+}
+
+
+/* Плавное раскрытие панели экспорта */
+.export-controls.show {
+  opacity: 1;
+  max-height: 180px;
+  transform: translateY(0);
+}
+
+
+.export-controls {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transform: translateY(-10px);
+  transition: all 0.4s ease;
+  will-change: opacity, max-height, transform;
+}
+
+
+
+
       `}</style>
 
       <h3>Заявки на выдачу</h3>
-
       <div className="btn-group mb-3">
         <button className={`btn ${activeTab === 'active' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setActiveTab('active')}>
           В процессе
@@ -781,24 +896,73 @@ const WarehouseOrders = () => {
           Архив
         </button>
       </div>
+      <div className="d-flex flex-wrap gap-2 mb-3 align-items-center justify-content-between">
+        <div className="d-flex gap-2 align-items-center">
+          <input
+            type="text"
+            className="form-control w-auto"
+            placeholder="Поиск по номеру заявки"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <input
+            type="text"
+            className="form-control w-auto"
+            placeholder="Поиск по коду детали"
+            value={searchMaterial}
+            onChange={e => setSearchMaterial(e.target.value)}
+          />
+          <DatePicker
+            selected={selectedDate}
+            onChange={setSelectedDate}
+            className="form-control w-auto"
+            placeholderText="Фильтр по дате"
+            dateFormat="dd.MM.yyyy"
+            isClearable
+          />
+        </div>
 
-      <div className="d-flex flex-wrap gap-2 mb-3 align-items-center">
-        <input
-          type="text"
-          className="form-control w-auto"
-          placeholder="Поиск по номеру заявки"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        <DatePicker
-          selected={selectedDate}
-          onChange={setSelectedDate}
-          className="form-control w-auto"
-          placeholderText="Фильтр по дате"
-          dateFormat="dd.MM.yyyy"
-          isClearable
-        />
+        {/* Кнопка-иконка экспорта */}
+        <button
+          className="btn-icon btn-export-toggle"
+          onClick={() => setShowExportPanel(!showExportPanel)}
+          data-tooltip="Дополнительные функции"
+        >
+          ⬇️
+        </button>
       </div>
+      {
+        <div className={`export-controls mt-2 p-3 border rounded bg-light ${showExportPanel ? 'show' : ''}`}>
+          <div className="d-flex flex-wrap gap-2 align-items-center">
+            <label className="me-2">Период:</label>
+            <DatePicker
+              selected={exportFrom}
+              onChange={setExportFrom}
+              className="form-control form-control-sm"
+              placeholderText="С даты"
+              dateFormat="dd.MM.yyyy"
+              popperPlacement="bottom-start"
+              popperClassName="datepicker-popper"
+              portalId="root"
+            />
+
+            <DatePicker
+              selected={exportTo}
+              onChange={setExportTo}
+              className="form-control form-control-sm"
+              placeholderText="По дату"
+              dateFormat="dd.MM.yyyy"
+              popperPlacement="bottom-start"
+              popperClassName="datepicker-popper"
+              portalId="root"
+            />
+
+            <button className="btn btn-success btn-sm" onClick={handleExportExcel} disabled={!exportFrom || !exportTo}>
+              Скачать Excel
+            </button>
+          </div>
+        </div>
+      }
 
       {loading ? (
         <div>Загрузка...</div>
@@ -896,7 +1060,6 @@ const WarehouseOrders = () => {
           )}
         </>
       )}
-
       <Modal
         show={!!selectedOrder}
         onHide={() => {
@@ -1034,7 +1197,6 @@ const WarehouseOrders = () => {
           )}
         </Modal.Footer>
       </Modal>
-
       <button
         className={`refresh-btn ${isRefreshing ? 'refreshing' : ''} ${refreshProgress > 80 ? 'near-refresh' : ''}`}
         onClick={() => fetchOrders()}

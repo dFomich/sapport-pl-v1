@@ -31,4 +31,10 @@ public interface MechanicOrderRepository extends JpaRepository<MechanicOrder, St
     List<MechanicOrder> findAllWithLinesByLogin(@Param("loginPart") String loginPart);
 
     void deleteByCreatedAtBefore(Instant cutoffDate);
+
+    // ✅ ДОБАВЬТЕ ЭТИ СТРОКИ:
+    @Query(
+        "SELECT o FROM MechanicOrder o LEFT JOIN FETCH o.lines WHERE o.createdAt >= :from AND o.createdAt <= :to ORDER BY o.createdAt DESC"
+    )
+    List<MechanicOrder> findOrdersInRangeWithLines(@Param("from") Instant from, @Param("to") Instant to);
 }
