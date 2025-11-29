@@ -7,6 +7,10 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="20251101-add-mechanic-order-id" author="chatgpt">
+        <!-- Некоторые окружения уже содержат sequence_generator, другие ожидали hibernate_sequence.
+             Создаем безопасную последовательность, чтобы миграция не падала, если её вызывает старый SQL. -->
+        <createSequence sequenceName="hibernate_sequence" ifNotExists="true"/>
+
         <dropForeignKeyConstraint baseTableName="mechanic_order_line" constraintName="fk_order_line_to_order"/>
         <dropPrimaryKey tableName="mechanic_order"/>
 
@@ -17,7 +21,7 @@
         </addColumn>
 
         <update tableName="mechanic_order">
-            <column name="id" valueComputed="nextval('hibernate_sequence')" />
+            <column name="id" valueComputed="nextval('sequence_generator')" />
         </update>
 
         <addPrimaryKey tableName="mechanic_order" columnNames="id" constraintName="pk_mechanic_order"/>
