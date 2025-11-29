@@ -7,6 +7,8 @@ import com.wmm.app.domain.ProductGroupLink;
 import com.wmm.app.repository.InventoryCurrentRepository;
 import com.wmm.app.repository.ProductGroupLinkRepository;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.DefaultAbsSender;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
@@ -22,6 +24,7 @@ public class TelegramBotService {
     private final InventoryCurrentRepository inventoryCurrentRepository;
     private final DefaultAbsSender sender;
     private final String defaultChatId;
+    private static final Logger log = LoggerFactory.getLogger(TelegramBotService.class);
 
     public TelegramBotService(
         ProductGroupLinkRepository productGroupLinkRepository,
@@ -33,16 +36,20 @@ public class TelegramBotService {
         this.defaultChatId = telegramProperties.getChatId();
 
         String token = telegramProperties.getBot().getToken();
-        if (token != null && !token.isBlank()) {
-            this.sender = new DefaultAbsSender(new DefaultBotOptions()) {
-                @Override
-                public String getBotToken() {
-                    return token;
-                }
-            };
-        } else {
-            this.sender = null;
+        if (token == null || token.isBlank()) {
+            throw new IllegalStateException("Telegram bot token is not configured");
         }
+
+        if (defaultChatId == null || defaultChatId.isBlank()) {
+            log.warn("Default Telegram chat id is not configured; outbound notifications may fail");
+        }
+
+        this.sender = new DefaultAbsSender(new DefaultBotOptions()) {
+            @Override
+            public String getBotToken() {
+                return token;
+            }
+        };
     }
 
     // 🔴 Уведомление о полном отсутствии товара
@@ -143,8 +150,8 @@ public class TelegramBotService {
 
     // 📘 Отправка сообщения с кнопкой "Показать аналоги"
     public void sendMessageWithAnalogButton(String chatId, String text, String materialCode) {
-        if (sender == null) {
-            System.out.println("Telegram sender not configured, skipping message with button: " + text);
+        if (isChatMissing(chatId)) {
+            log.warn("Skip sending message with analog button because chatId is missing for material {}", materialCode);
             return;
         }
 
@@ -162,14 +169,14 @@ public class TelegramBotService {
         try {
             sender.execute(msg);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            log.error("Failed to send analog button message for material {} to chat {}", materialCode, chatId, e);
         }
     }
 
     // 💬 Отправка простого текстового сообщения
     public void sendMessage(String chatId, String text) {
-        if (sender == null) {
-            System.out.println("Telegram sender not configured, skipping message: " + text);
+        if (isChatMissing(chatId)) {
+            log.warn("Skip sending plain message because chatId is missing. Text: {}", text);
             return;
         }
 
@@ -178,7 +185,15 @@ public class TelegramBotService {
         try {
             sender.execute(message);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            log.error("Failed to send message to chat {}", chatId, e);
         }
+    }
+
+    private boolean isChatMissing(String chatId) {
+        if (chatId == null || chatId.isBlank()) {
+            log.error("Chat id is missing; configured default chat id: {}", defaultChatId);
+            return true;
+        }
+        return false;
     }
 }

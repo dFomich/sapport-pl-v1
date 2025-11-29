@@ -42,7 +42,7 @@ public class MechanicOrderResource {
     private record CheckoutLine(String materialCode, String title, Integer qty) {}
 
     private record CheckoutResponse(
-        Long orderId,
+        Long Id,
         String orderName,
         String storageType,
         String mechanicLogin,
@@ -106,16 +106,16 @@ public class MechanicOrderResource {
 
     @PutMapping("/{orderId}/complete")
     @PreAuthorize("hasAnyAuthority('ROLE_WAREHOUSEMAN', 'ROLE_SENIOR_WAREHOUSEMAN')")
-    public ResponseEntity<Void> markAsCompleted(@PathVariable String orderId) {
+    public ResponseEntity<Void> markAsCompleted(@PathVariable Long orderId) {
         mechanicOrderService.markAsCompleted(orderId);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{orderId}")
     @PreAuthorize("hasAnyAuthority('ROLE_MECHANIC', 'ROLE_SENIOR_MECHANIC')")
-    public ResponseEntity<?> getOrderLines(@PathVariable String orderId) {
+    public ResponseEntity<?> getOrderLines(@PathVariable Long orderId) {
         return orderRepo
-            .findByOrderId(orderId)
+            .findById(orderId)
             .map(order -> ResponseEntity.ok(Map.of("lines", order.getLines())))
             .orElse(ResponseEntity.notFound().build());
     }
@@ -192,7 +192,7 @@ public class MechanicOrderResource {
             .toList();
 
         entity.setLines(entityLines);
-        orderRepo.save(entity);
+        MechanicOrder saved = orderRepo.save(entity);
 
         for (var e : requested.entrySet()) {
             String material = e.getKey();
@@ -237,19 +237,19 @@ public class MechanicOrderResource {
                 });
         }
 
-        return ResponseEntity.ok(new CheckoutResponse(orderId, req.orderName(), req.storageType(), login, now, lines));
+        return ResponseEntity.ok(new CheckoutResponse(saved.getId(), req.orderName(), req.storageType(), login, now, lines));
     }
 
     @PutMapping("/{orderId}/lines")
     @PreAuthorize("hasAnyAuthority('ROLE_WAREHOUSEMAN', 'ROLE_SENIOR_WAREHOUSEMAN')")
-    public ResponseEntity<Void> updateOrderLines(@PathVariable String orderId, @RequestBody List<MechanicOrderLineDTO> lines) {
+    public ResponseEntity<Void> updateOrderLines(@PathVariable Long orderId, @RequestBody List<MechanicOrderLineDTO> lines) {
         mechanicOrderService.updateOrderLines(orderId, lines);
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{orderId}/cancel")
     @PreAuthorize("hasAnyAuthority('ROLE_WAREHOUSEMAN', 'ROLE_SENIOR_WAREHOUSEMAN')")
-    public ResponseEntity<Void> cancelOrder(@PathVariable String orderId) {
+    public ResponseEntity<Void> cancelOrder(@PathVariable Long orderId) {
         mechanicOrderService.cancelOrder(orderId);
         return ResponseEntity.ok().build();
     }
@@ -257,7 +257,7 @@ public class MechanicOrderResource {
     @PutMapping("/{orderId}/update-line")
     @PreAuthorize("hasAnyAuthority('ROLE_WAREHOUSEMAN', 'ROLE_SENIOR_WAREHOUSEMAN')")
     public ResponseEntity<Void> updateOrderLine(
-        @PathVariable String orderId,
+        @PathVariable Long orderId,
         @RequestParam String material,
         @RequestParam(required = false) Integer newQty
     ) {

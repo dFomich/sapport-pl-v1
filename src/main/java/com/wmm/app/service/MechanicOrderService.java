@@ -94,10 +94,8 @@ public class MechanicOrderService {
         return resp;
     }
 
-    public void markAsCompleted(String orderId) {
-        MechanicOrder order = orderRepo
-            .findByOrderId(orderId)
-            .orElseThrow(() -> new EntityNotFoundException("Заявка не найдена: " + orderId));
+    public void markAsCompleted(Long orderId) {
+        MechanicOrder order = orderRepo.findById(orderId).orElseThrow(() -> new EntityNotFoundException("Заявка не найдена: " + orderId));
 
         order.setCompleted(true);
         orderRepo.save(order);
@@ -118,10 +116,8 @@ public class MechanicOrderService {
         }
     }
 
-    public void cancelOrder(String orderId) {
-        MechanicOrder order = orderRepo
-            .findByOrderId(orderId)
-            .orElseThrow(() -> new EntityNotFoundException("Заявка не найдена: " + orderId));
+    public void cancelOrder(Long orderId) {
+        MechanicOrder order = orderRepo.findById(orderId).orElseThrow(() -> new EntityNotFoundException("Заявка не найдена: " + orderId));
 
         order.setCompleted(true); // чтобы скрылась с активных заявок
         order.setCancelled(true); // чтобы отметить как удалённую
@@ -139,10 +135,8 @@ public class MechanicOrderService {
     }
 
     @Transactional
-    public void updateLineQtyOrDelete(String orderId, String materialCode, Integer newQty) {
-        MechanicOrder order = orderRepo
-            .findByOrderId(orderId)
-            .orElseThrow(() -> new EntityNotFoundException("Заявка не найдена: " + orderId));
+    public void updateLineQtyOrDelete(Long orderId, String materialCode, Integer newQty) {
+        MechanicOrder order = orderRepo.findById(orderId).orElseThrow(() -> new EntityNotFoundException("Заявка не найдена: " + orderId));
 
         List<MechanicOrderLine> lines = order.getLines();
         MechanicOrderLine line = lines
@@ -174,10 +168,8 @@ public class MechanicOrderService {
     }
 
     @Transactional
-    public void updateOrderLines(String orderId, List<MechanicOrderLineDTO> lines) {
-        MechanicOrder order = orderRepo
-            .findByOrderId(orderId)
-            .orElseThrow(() -> new EntityNotFoundException("Заявка не найдена: " + orderId));
+    public void updateOrderLines(Long orderId, List<MechanicOrderLineDTO> lines) {
+        MechanicOrder order = orderRepo.findById(orderId).orElseThrow(() -> new EntityNotFoundException("Заявка не найдена: " + orderId));
 
         // Получаем ссылку на текущий список
         List<MechanicOrderLine> existingLines = order.getLines();

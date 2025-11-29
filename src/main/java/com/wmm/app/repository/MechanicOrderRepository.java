@@ -11,7 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface MechanicOrderRepository extends JpaRepository<MechanicOrder, String> {
+public interface MechanicOrderRepository extends JpaRepository<MechanicOrder, Long> {
     List<MechanicOrder> findByMechanicLogin(String mechanicLogin);
 
     @EntityGraph(attributePaths = "lines")

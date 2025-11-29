@@ -337,10 +337,10 @@ const WarehouseOrders = () => {
     setTimeout(() => document.body.removeChild(iframe), 1000);
   };
 
-  const markOrderAsCompleted = async (orderId: string) => {
+  const markOrderAsCompleted = async (orderId: number) => {
     try {
       await axios.put(`/api/mechanic-orders/${orderId}/complete`);
-      setOrders(prev => prev.map(o => (o.orderId === orderId ? { ...o, completed: true } : o)));
+      setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, completed: true } : o)));
       setSelectedOrder(null);
     } catch (e) {
       alert('Не удалось отметить заявку как завершённую.');
@@ -350,8 +350,8 @@ const WarehouseOrders = () => {
   const saveEditedOrder = async () => {
     if (!selectedOrder) return;
     try {
-      await axios.put(`/api/mechanic-orders/${selectedOrder.orderId}/lines`, selectedOrder.lines);
-      setOrders(prev => prev.map(o => (o.orderId === selectedOrder.orderId ? selectedOrder : o)));
+      await axios.put(`/api/mechanic-orders/${selectedOrder.id}/lines`, selectedOrder.lines);
+      setOrders(prev => prev.map(o => (o.id === selectedOrder.id ? selectedOrder : o)));
       setEditMode(false);
     } catch (e) {
       alert('Ошибка при сохранении изменений');
@@ -362,8 +362,8 @@ const WarehouseOrders = () => {
     if (!selectedOrder) return;
     if (!window.confirm('Удалить всю заявку?')) return;
     try {
-      await axios.put(`/api/mechanic-orders/${selectedOrder.orderId}/cancel`);
-      setOrders(prev => prev.map(o => (o.orderId === selectedOrder.orderId ? { ...o, completed: true, cancelled: true } : o)));
+      await axios.put(`/api/mechanic-orders/${selectedOrder.id}/cancel`);
+      setOrders(prev => prev.map(o => (o.id === selectedOrder.id ? { ...o, completed: true, cancelled: true } : o)));
       setSelectedOrder(null);
     } catch {
       alert('Ошибка при удалении заявки');
@@ -971,7 +971,7 @@ const WarehouseOrders = () => {
       ) : (
         <>
           {pagedOrders.map((order, idx) => (
-            <div key={order.orderId} className="card mb-2">
+            <div key={order.id} className="card mb-2">
               <div className="card-header d-flex justify-content-between align-items-center">
                 <div>
                   <span className="me-2 text-muted">#{startIndex + idx + 1}</span>
@@ -1174,7 +1174,7 @@ const WarehouseOrders = () => {
                     <button className="btn-system btn-edit" onClick={() => setEditMode(true)}>
                       Редактировать
                     </button>
-                    <button className="btn-system btn-complete" onClick={() => markOrderAsCompleted(selectedOrder.orderId)}>
+                    <button className="btn-system btn-complete" onClick={() => markOrderAsCompleted(selectedOrder.id)}>
                       Заявка выдана
                     </button>
                   </>

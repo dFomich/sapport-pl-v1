@@ -11,7 +11,11 @@ import java.util.List;
 public class MechanicOrder implements Serializable {
 
     @Id
-    private String orderId; // номер машины (уникальный)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id; // технический первичный ключ
+
+    @Column(name = "order_id", nullable = false)
+    private String orderId; // номер машины (может повторяться)
 
     @Column(name = "mechanic_login", nullable = false)
     private String mechanicLogin;
@@ -32,6 +36,14 @@ public class MechanicOrder implements Serializable {
     private List<MechanicOrderLine> lines = new ArrayList<>();
 
     // Геттеры и сеттеры
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public boolean isCancelled() {
         return cancelled;

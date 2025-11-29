@@ -31,8 +31,8 @@ const MyOrders = () => {
   const [mechanicLoginFilter, setMechanicLoginFilter] = useState('');
 
   const [visibleOrders, setVisibleOrders] = useState<Order[]>([]);
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-  const [orderLines, setOrderLines] = useState<Record<string, OrderLine[]>>({});
+  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
+  const [orderLines, setOrderLines] = useState<Record<number, OrderLine[]>>({});
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState('');
@@ -83,7 +83,7 @@ const MyOrders = () => {
     setVisibleOrders(filtered);
   }, [search, selectedDate, sortAsc, orders]);
 
-  const toggleDetails = async (orderId: string) => {
+  const toggleDetails = async (orderId: number) => {
     if (expandedOrderId === orderId) {
       setExpandedOrderId(null);
       return;
@@ -146,7 +146,7 @@ const MyOrders = () => {
       ) : (
         <>
           {pagedOrders.map((order, idx) => (
-            <div key={order.orderId} className="card mb-2">
+            <div key={order.id} className="card mb-2">
               <div className="card-header d-flex justify-content-between align-items-center">
                 <div>
                   <span className="me-2 text-muted">#{startIndex + idx + 1}</span>
@@ -165,15 +165,15 @@ const MyOrders = () => {
                     {order.cancelled ? 'Удалена' : order.completed ? 'Завершено' : 'В процессе'}
                   </span>
 
-                  <button className="btn btn-outline-primary btn-sm" onClick={() => toggleDetails(order.orderId)}>
-                    {expandedOrderId === order.orderId ? 'Скрыть детали' : 'Детали'}
+                  <button className="btn btn-outline-primary btn-sm" onClick={() => toggleDetails(order.id)}>
+                    {expandedOrderId === order.id ? 'Скрыть детали' : 'Детали'}
                   </button>
                 </div>
               </div>
 
-              {expandedOrderId === order.orderId && (
+              {expandedOrderId === order.id && (
                 <div className="card-body" style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
-                  {orderLines[order.orderId] ? (
+                  {orderLines[order.id] ? (
                     <table className="table table-sm table-bordered">
                       <thead>
                         <tr>
@@ -184,7 +184,7 @@ const MyOrders = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {orderLines[order.orderId].map((line, i) => (
+                        {orderLines[order.id].map((line, i) => (
                           <tr key={i}>
                             <td>{i + 1}</td>
                             <td>{line.materialCode}</td>

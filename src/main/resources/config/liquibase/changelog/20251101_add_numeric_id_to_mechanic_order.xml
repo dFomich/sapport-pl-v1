@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="20251101-add-mechanic-order-id" author="chatgpt">
+        <dropForeignKeyConstraint baseTableName="mechanic_order_line" constraintName="fk_order_line_to_order"/>
+        <dropPrimaryKey tableName="mechanic_order"/>
+
+        <addColumn tableName="mechanic_order">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <update tableName="mechanic_order">
+            <column name="id" valueComputed="nextval('hibernate_sequence')" />
+        </update>
+
+        <addPrimaryKey tableName="mechanic_order" columnNames="id" constraintName="pk_mechanic_order"/>
+
+        <addColumn tableName="mechanic_order_line">
+            <column name="order_pk" type="bigint"/>
+        </addColumn>
+
+        <update tableName="mechanic_order_line">
+            <column name="order_pk" valueComputed="(SELECT id FROM mechanic_order mo WHERE mo.order_id = mechanic_order_line.order_id)" />
+        </update>
+
+        <addNotNullConstraint tableName="mechanic_order_line" columnName="order_pk" columnDataType="bigint"/>
+        <dropColumn tableName="mechanic_order_line" columnName="order_id"/>
+        <renameColumn tableName="mechanic_order_line" oldColumnName="order_pk" newColumnName="order_id" columnDataType="bigint"/>
+
+        <addForeignKeyConstraint
+            baseTableName="mechanic_order_line"
+            baseColumnNames="order_id"
+            referencedTableName="mechanic_order"
+            referencedColumnNames="id"
+            constraintName="fk_order_line_to_order_new"/>
+    </changeSet>
+</databaseChangeLog>
