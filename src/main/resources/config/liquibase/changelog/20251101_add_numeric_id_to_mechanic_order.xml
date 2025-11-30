@@ -45,4 +45,17 @@
             referencedColumnNames="id"
             constraintName="fk_order_line_to_order_new"/>
     </changeSet>
+
+    <changeSet id="20251101-fix-mechanic-order-sequence" author="chatgpt">
+        <preConditions onFail="MARK_RAN">
+            <sequenceExists sequenceName="mechanic_order_id_seq"/>
+        </preConditions>
+        <sql>
+            SELECT setval(
+                'mechanic_order_id_seq',
+                GREATEST((SELECT COALESCE(MAX(id), 0) FROM mechanic_order), 1),
+                true
+            );
+        </sql>
+    </changeSet>
 </databaseChangeLog>

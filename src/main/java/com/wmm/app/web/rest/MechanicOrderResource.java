@@ -42,7 +42,7 @@ public class MechanicOrderResource {
     private record CheckoutLine(String materialCode, String title, Integer qty) {}
 
     private record CheckoutResponse(
-        Long Id,
+        Long id,
         String orderName,
         String storageType,
         String mechanicLogin,
@@ -161,7 +161,6 @@ public class MechanicOrderResource {
         }
 
         // создаём заявку
-        Long orderId = System.currentTimeMillis();
         String login = currentLogin();
         Instant now = Instant.now();
 
